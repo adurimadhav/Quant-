@@ -1,0 +1,2032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Quant Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Bebas+Neue&display=swap" rel="stylesheet"/>
+<style>
+
+/* ═══════════════════════════════════════════════════
+   BASE — larger fonts for readability
+═══════════════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#050810;color:#c8dff0;font-family:'IBM Plex Mono',monospace;
+  font-size:13px;line-height:1.6;
+  background-image:radial-gradient(ellipse at 20% 20%,#0a1628,transparent 60%),
+                   radial-gradient(ellipse at 80% 80%,#071020,transparent 60%)}
+input,button{font-family:inherit}
+input:focus{outline:none;border-color:#4fc3f7!important}
+button{cursor:pointer;transition:all .15s;border:none}
+button:hover:not(:disabled){opacity:.85;transform:translateY(-1px)}
+button:disabled{cursor:not-allowed;opacity:.45}
+
+.lbl{font-size:11px;letter-spacing:2px;color:#2a5f8a;text-transform:uppercase;margin-bottom:5px}
+
+/* ═══════════════════════════════════════════════════
+   DISCLAIMER
+═══════════════════════════════════════════════════ */
+#disclaimerBanner{background:linear-gradient(135deg,#0a0e1a,#0d1220);
+  border-bottom:2px solid #1a3a5c;padding:12px 20px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.disc-badge{font-size:10px;letter-spacing:2px;padding:4px 10px;border-radius:4px;
+  white-space:nowrap;font-weight:600}
+.disc-edu{background:rgba(79,195,247,.12);border:1px solid #4fc3f7;color:#4fc3f7}
+.disc-warn{background:rgba(255,152,0,.1);border:1px solid #ff9800;color:#ff9800}
+.disc-text{font-size:11px;color:#2a5f8a;letter-spacing:.5px;line-height:1.5;flex:1;min-width:220px}
+.disc-text b{color:#4a7a9b}
+
+/* ═══════════════════════════════════════════════════
+   HEADER CONTROLS
+═══════════════════════════════════════════════════ */
+.pbtn{background:transparent;border:1px solid #1a3a5c;color:#4a7a9b;
+  padding:8px 13px;font-size:12px;border-radius:4px;letter-spacing:1px}
+.pbtn.on{background:#0d2a47;border-color:#4fc3f7;color:#4fc3f7}
+#runBtn{background:linear-gradient(135deg,#0d3a6e,#0a2a52);border:1px solid #4fc3f7;
+  color:#4fc3f7;padding:11px 28px;font-size:13px;letter-spacing:3px;border-radius:5px;
+  box-shadow:0 0 20px rgba(79,195,247,.2)}
+
+/* ═══════════════════════════════════════════════════
+   LOADER / EMPTY
+═══════════════════════════════════════════════════ */
+.b{display:inline-block;width:4px;height:22px;background:#4fc3f7;border-radius:2px;margin:0 3px}
+@keyframes pulse{from{opacity:.2;transform:scaleY(.4)}to{opacity:1;transform:scaleY(1)}}
+.b:nth-child(1){animation:pulse 1.2s 0s   ease-in-out infinite alternate}
+.b:nth-child(2){animation:pulse 1.2s .15s ease-in-out infinite alternate}
+.b:nth-child(3){animation:pulse 1.2s .30s ease-in-out infinite alternate}
+.b:nth-child(4){animation:pulse 1.2s .45s ease-in-out infinite alternate}
+.b:nth-child(5){animation:pulse 1.2s .60s ease-in-out infinite alternate}
+#empty{display:block;border:1px dashed #1a3a5c;border-radius:8px;padding:60px 32px;
+  text-align:center;margin-bottom:0}
+#empty h2{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:5px;
+  color:#1a3a5c;margin-bottom:10px}
+#empty p{font-size:12px;letter-spacing:2px;color:#1a3a5c}
+
+/* ═══════════════════════════════════════════════════
+   TAB NAV — proper buttons
+═══════════════════════════════════════════════════ */
+#tabNav{display:none;padding:16px 20px 0;background:#060c18;
+  border-bottom:2px solid #1a3a5c;position:sticky;top:0;z-index:100;
+  overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+#tabNav::-webkit-scrollbar{display:none}
+.tab-btn:hover{color:#8ec8e8;background:#0d2040;border-color:#2a5f8a;transform:none}
+.tab-btn.active{color:#e0f4ff;background:#060c18;
+  border-color:#4fc3f7;border-bottom-color:#060c18;
+  box-shadow:0 -3px 12px rgba(79,195,247,.15)}
+.tab-icon{font-size:16px;line-height:1}
+.tab-badge{font-size:10px;padding:2px 7px;border-radius:10px;letter-spacing:1px;
+  background:rgba(79,195,247,.12);border:1px solid rgba(79,195,247,.25);color:#4fc3f7}
+.tab-badge.red{background:rgba(239,83,80,.15);border-color:rgba(239,83,80,.3);color:#ef5350}
+.tab-badge.green{background:rgba(76,175,80,.15);border-color:rgba(76,175,80,.3);color:#4caf50}
+.tab-badge.amber{background:rgba(255,152,0,.15);border-color:rgba(255,152,0,.3);color:#ff9800}
+
+/* ═══════════════════════════════════════════════════
+   PREDICTION BANNER
+═══════════════════════════════════════════════════ */
+#predBanner{border:1px solid #1e3a5f;border-radius:6px;
+  background:linear-gradient(135deg,#07101f,#0a1628);overflow:hidden}
+.pred-grid{display:flex;flex-wrap:wrap}
+.pred-cell{padding:16px 20px;border-right:1px solid #1a3a5c;border-bottom:1px solid #1a3a5c;
+  min-width:140px;flex:1}
+.pred-big{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:3px;
+  line-height:1;margin-top:6px}
+.pred-sub{font-size:12px;color:#4a7a9b;margin-top:4px}
+.conf-chip{display:inline-block;padding:4px 10px;border-radius:10px;
+  font-size:10px;letter-spacing:2px;margin-top:8px}
+.conf-hi{background:rgba(76,175,80,.15);border:1px solid #4caf50;color:#4caf50}
+.conf-md{background:rgba(255,152,0,.15);border:1px solid #ff9800;color:#ff9800}
+.conf-lo{background:rgba(239,83,80,.15);border:1px solid #ef5350;color:#ef5350}
+
+/* STATS BAR */
+#statsBar{display:flex;flex-wrap:wrap;gap:1px;border:1px solid #1a3a5c;
+  border-radius:6px;overflow:hidden}
+.sc{flex:1 1 100px;padding:12px 14px;background:#070d1a;border-right:1px solid #1a3a5c}
+.sv{font-size:14px;font-weight:600;letter-spacing:1px;margin-top:4px}
+
+/* ═══════════════════════════════════════════════════
+   CHART PANE
+═══════════════════════════════════════════════════ */
+#chartWrap{border:1px solid #1a3a5c;border-radius:6px;padding:16px;background:#060c18;
+  position:relative}
+#chartCanvas{display:block;width:100%;cursor:crosshair}
+#rsiCanvas{display:block;width:100%;cursor:crosshair;margin-top:4px}
+#sfiCanvas{display:block;width:100%;cursor:crosshair;margin-top:4px}
+.chart-sublabel{font-size:10px;letter-spacing:2px;color:#2a5f8a;
+  margin-top:12px;margin-bottom:4px;text-transform:uppercase}
+#chartLegend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.li{display:flex;align-items:center;gap:6px;font-size:11px;color:#4a7a9b}
+.ld{width:20px;height:2px;border-radius:1px}
+#tt{position:absolute;display:none;background:#0a0e1a;border:1px solid #1e3a5f;
+  padding:10px 14px;border-radius:6px;font-size:12px;pointer-events:none;z-index:10;
+  min-width:160px;top:36px}
+.ttd{color:#4fc3f7;font-size:10px;letter-spacing:2px;margin-bottom:5px}
+.ttr{line-height:2.0}
+
+/* ═══════════════════════════════════════════════════
+   TECHNICALS PANEL
+═══════════════════════════════════════════════════ */
+#techPanel{border:1px solid #1a3a5c;border-radius:6px;overflow:hidden}
+.tech-hdr{background:#070d1a;padding:10px 18px;font-size:11px;letter-spacing:3px;
+  color:#2a5f8a;border-bottom:1px solid #1a3a5c;
+  display:flex;justify-content:space-between;align-items:center}
+.tech-hdr-right{font-size:12px;color:#4a7a9b;letter-spacing:1px}
+.tech-grid{display:flex;flex-wrap:wrap}
+.tech-wk{flex:1 1 260px;padding:16px 20px;border-right:1px solid #1a3a5c;border-bottom:1px solid #1a3a5c}
+.wk-bar-wrap{position:relative;height:10px;background:#0e2236;border-radius:5px;margin:10px 0 7px}
+.wk-bar-fill{height:100%;border-radius:5px}
+.wk-marker{position:absolute;top:-4px;width:3px;height:18px;border-radius:2px;
+  background:#fff;transform:translateX(-50%)}
+.wk-labels{display:flex;justify-content:space-between;font-size:10px;color:#4a7a9b}
+.tech-vwap{flex:1 1 180px;padding:16px 20px;border-right:1px solid #1a3a5c;border-bottom:1px solid #1a3a5c}
+.vwap-big{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:2px;
+  line-height:1;margin-top:5px}
+.vwap-chip{display:inline-block;padding:3px 9px;border-radius:3px;font-size:10px;
+  letter-spacing:2px;margin-top:7px}
+.tech-rsi{flex:1 1 200px;padding:16px 20px;border-right:1px solid #1a3a5c;border-bottom:1px solid #1a3a5c}
+.rsi-big{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:2px;line-height:1}
+.rsi-zone{font-size:10px;letter-spacing:2px;margin-top:3px}
+.tech-ma{flex:2 1 400px;padding:16px 20px;border-bottom:1px solid #1a3a5c}
+.ma-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ma-pill{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:5px;
+  font-size:12px;min-width:120px;flex:1}
+.ma-pill.above{background:rgba(76,175,80,.08);border:1px solid rgba(76,175,80,.25)}
+.ma-pill.below{background:rgba(239,83,80,.08);border:1px solid rgba(239,83,80,.25)}
+.ma-pill.na{background:rgba(100,100,100,.08);border:1px solid rgba(100,100,100,.2)}
+.ma-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ma-label{color:#4a7a9b;font-size:11px}
+.ma-val{margin-left:auto;font-size:12px;font-weight:600}
+.ma-arrow{font-size:12px;margin-left:3px}
+.tech-tail{flex:1 1 260px;padding:16px 20px;border-right:1px solid #1a3a5c;border-bottom:1px solid #1a3a5c}
+.sfi-bar-wrap{position:relative;height:12px;border-radius:6px;overflow:hidden;margin:9px 0 5px;
+  background:linear-gradient(90deg,#1a5c2a 0%,#4caf50 20%,#ffd54f 40%,#ff9800 60%,#ef5350 80%,#7a1a1a 100%)}
+.sfi-marker{position:absolute;top:-3px;width:4px;height:18px;background:#fff;
+  border-radius:2px;transform:translateX(-50%);box-shadow:0 0 6px rgba(255,255,255,.5)}
+.sfi-big{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:2px;line-height:1}
+.sfi-labels{display:flex;justify-content:space-between;font-size:9px;color:#2a5f8a}
+.sfi-chip{display:inline-block;padding:3px 9px;border-radius:3px;font-size:10px;
+  letter-spacing:2px;margin-top:5px}
+.tail-row{display:flex;justify-content:space-between;align-items:center;
+  padding:5px 0;border-bottom:1px solid #0e1e30;font-size:12px}
+.tail-row:last-child{border-bottom:none}
+.tail-k{color:#4a7a9b;font-size:11px}
+.tail-v{font-weight:600;letter-spacing:1px}
+
+/* ═══════════════════════════════════════════════════
+   TRADE CARD
+═══════════════════════════════════════════════════ */
+#tradeCard{border-radius:6px;overflow:hidden;border:1px solid #1a3a5c}
+.trade-header{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;background:#070d1a;border-bottom:1px solid #1a3a5c}
+.trade-header-left{display:flex;align-items:center;gap:12px}
+.trade-title{font-size:13px;letter-spacing:2px;color:#4fc3f7;text-transform:uppercase}
+.trade-sub{font-size:11px;color:#2a5f8a;margin-top:2px}
+.trade-badge{font-size:11px;letter-spacing:2px;padding:5px 12px;border-radius:5px;font-weight:600}
+.badge-buy{background:rgba(76,175,80,.2);border:1px solid #4caf50;color:#4caf50}
+.badge-sell{background:rgba(239,83,80,.2);border:1px solid #ef5350;color:#ef5350}
+.badge-wait{background:rgba(255,152,0,.2);border:1px solid #ff9800;color:#ff9800}
+.trade-body{background:#07101a}
+.ees-grid{display:flex;flex-wrap:wrap;border-bottom:1px solid #1a3a5c}
+.ees-cell{flex:1 1 160px;padding:18px 20px;border-right:1px solid #1a3a5c}
+.ees-cell:last-child{border-right:none}
+.ees-label{font-size:11px;letter-spacing:2px;color:#2a5f8a;text-transform:uppercase;margin-bottom:6px}
+.ees-price{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:3px;line-height:1}
+.ees-sub{font-size:12px;color:#4a7a9b;margin-top:5px;line-height:1.5}
+.ees-tag{display:inline-block;font-size:10px;letter-spacing:2px;
+  padding:3px 8px;border-radius:3px;margin-top:7px}
+.tag-entry{background:rgba(79,195,247,.1);border:1px solid #4fc3f7;color:#4fc3f7}
+.tag-target{background:rgba(76,175,80,.1);border:1px solid #4caf50;color:#4caf50}
+.tag-stop{background:rgba(239,83,80,.1);border:1px solid #ef5350;color:#ef5350}
+.tag-exit{background:rgba(206,147,216,.1);border:1px solid #ce93d8;color:#ce93d8}
+.rr-row{padding:14px 20px;border-bottom:1px solid #1a3a5c}
+.rr-label{font-size:11px;letter-spacing:2px;color:#2a5f8a;text-transform:uppercase;
+  margin-bottom:9px;display:flex;justify-content:space-between}
+.rr-ratio{font-size:14px;color:#e0f4ff}
+.rr-bar-wrap{height:10px;background:#0e2236;border-radius:5px;overflow:hidden;display:flex}
+.rr-reward{height:100%;background:linear-gradient(90deg,#1a5c2a,#4caf50)}
+.rr-risk  {height:100%;background:linear-gradient(90deg,#ef5350,#7a1a1a)}
+.rr-legend{display:flex;gap:18px;margin-top:8px}
+.rr-leg{font-size:11px;display:flex;align-items:center;gap:6px;color:#4a7a9b}
+.rr-dot{width:9px;height:9px;border-radius:50%}
+.level-rows{padding:14px 20px}
+.level-row{display:flex;align-items:flex-start;gap:12px;
+  padding:9px 0;border-bottom:1px solid #0e1e30}
+.level-row:last-child{border-bottom:none}
+.level-icon{font-size:15px;width:22px;flex-shrink:0;margin-top:1px}
+.level-text{font-size:13px;line-height:1.8;color:#9bbdd4}
+.level-text b{color:#e0f4ff}
+.level-text .up{color:#4caf50}
+.level-text .dn{color:#ef5350}
+
+/* ═══════════════════════════════════════════════════
+   AI ANALYSIS
+═══════════════════════════════════════════════════ */
+#commentary{border:1px solid #1a3a5c;border-radius:6px;overflow:hidden}
+.comm-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px;
+  background:#070d1a;border-bottom:1px solid #1a3a5c}
+.comm-icon{width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,#0d3a6e,#1a1a4e);
+  border:1px solid #4fc3f7;display:flex;align-items:center;
+  justify-content:center;font-size:15px;flex-shrink:0}
+.comm-body{padding:22px 24px;background:#060d1a}
+.comm-para{font-size:13px;line-height:1.9;color:#9bbdd4;margin-bottom:14px}
+.comm-para:last-child{margin-bottom:0}
+.comm-para b{color:#e0f4ff;font-weight:600}
+.comm-para .up{color:#4caf50;font-weight:600}
+.comm-para .dn{color:#ef5350;font-weight:600}
+.comm-para .warn{color:#ff9800;font-weight:600}
+.comm-divider{height:1px;background:linear-gradient(90deg,#1a3a5c,transparent);margin:14px 0}
+#modelRace{border:1px solid #1a3a5c;border-radius:6px;overflow:hidden}
+.race-hdr{background:#070d1a;padding:11px 16px;font-size:11px;
+  letter-spacing:3px;color:#2a5f8a;border-bottom:1px solid #1a3a5c}
+.race-row{display:flex;align-items:center;padding:10px 16px;gap:12px;border-bottom:1px solid #0e1e30}
+.race-row.win{background:#0d1e35}
+.rn{width:140px;font-size:12px;color:#8fb8d8}
+.rb{flex:1;height:7px;background:#0e2236;border-radius:4px;overflow:hidden}
+.rbar{height:100%;border-radius:4px}
+.rv{width:56px;text-align:right;font-size:12px}
+.rbadge{font-size:9px;letter-spacing:2px;padding:3px 7px;border-radius:3px;
+  background:rgba(0,229,255,.1);border:1px solid #00e5ff;color:#00e5ff}
+
+/* ═══════════════════════════════════════════════════
+   SHARED / UTILS
+═══════════════════════════════════════════════════ */
+#footer{padding:14px 0;font-size:11px;letter-spacing:2px;color:#1a3a5c;text-align:right}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:#050810}
+::-webkit-scrollbar-thumb{background:#1a3a5c;border-radius:2px}
+
+
+/* ═══════════════════════════════════════
+   TAB NAV — pill-button style
+═══════════════════════════════════════ */
+#tabNav {
+  display: none;
+  background: #060c18;
+  border-bottom: 2px solid #1a3a5c;
+  padding: 14px 20px 0;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+#tabNav::-webkit-scrollbar { display:none; }
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  margin-right: 6px;
+  margin-bottom: -2px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #4a7a9b;
+  background: #0a1628;
+  border: 2px solid #1a3a5c;
+  border-bottom: 2px solid #1a3a5c;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  transition: all .18s;
+  white-space: nowrap;
+}
+.tab-btn:hover  { color:#8ec8e8; background:#0d2040; border-color:#2a5f8a; transform:none; }
+.tab-btn.active { color:#e0f4ff; background:#060c18; border-color:#4fc3f7; border-bottom-color:#060c18; box-shadow:0 -3px 12px rgba(79,195,247,.15); }
+.tab-icon { font-size:16px; line-height:1; }
+.tab-badge { font-size:10px; padding:2px 7px; border-radius:10px; letter-spacing:1px;
+  background:rgba(79,195,247,.12); border:1px solid rgba(79,195,247,.25); color:#4fc3f7; }
+.tab-badge.red   { background:rgba(239,83,80,.15);  border-color:rgba(239,83,80,.3);  color:#ef5350; }
+.tab-badge.green { background:rgba(76,175,80,.15);  border-color:rgba(76,175,80,.3);  color:#4caf50; }
+.tab-badge.amber { background:rgba(255,152,0,.15);  border-color:rgba(255,152,0,.3);  color:#ff9800; }
+
+/* ═══════════════════════════════════════
+   TAB PANES
+═══════════════════════════════════════ */
+.tab-pane {
+  padding: 20px;
+}
+/* all panes hidden by default via JS; this just sets spacing */
+
+@keyframes fadePane {
+  from { opacity:0; transform:translateY(5px); }
+  to   { opacity:1; transform:translateY(0);   }
+}
+.tab-pane-visible { animation: fadePane .2s ease-out; }
+</style>
+</head>
+<body>
+
+<!-- ── DISCLAIMER ─────────────────────────────────────────────── -->
+<div id="disclaimerBanner">
+  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex-shrink:0">
+    <div class="disc-badge disc-edu">&#127979; EDUCATIONAL USE ONLY</div>
+    <div class="disc-badge disc-warn">&#9888; NOT FINANCIAL ADVICE</div>
+    <div class="disc-badge disc-edu">&#128203; RESEARCH TOOL</div>
+  </div>
+  <div class="disc-text"><b>Educational &amp; Research Use Only.</b> This tool does not constitute financial, investment, trading, tax or legal advice and must not be relied upon for any investment decision. All model outputs — including price forecasts, fragility scores, and trade setup levels — are mathematical estimates derived from historical price data only. They do not predict future results. Past performance is not indicative of future returns. The Structural Fragility Index (SFI) is inspired by academic research (N.N. Taleb, M. Spitznagel) and is not a certified financial indicator. Market conditions can change rapidly and without warning. <b>Always consult a qualified, licensed financial advisor before making any investment decisions.</b></div>
+</div>
+
+<!-- ── HEADER ─────────────────────────────────────────────────── -->
+<div style="padding:20px 20px 16px">
+  <div style="margin-bottom:20px">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:6px;color:#4fc3f7;line-height:1">QUANT</span>
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:6px;color:#fff;line-height:1">TERMINAL</span>
+    </div>
+    <div style="font-size:11px;letter-spacing:3px;color:#2a5f8a;text-transform:uppercase">AI Model Selection &middot; 90-Day Forecast &middot; Technicals &middot; Entry &amp; Exit Points</div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:16px">
+    <div>
+      <div class="lbl">Ticker</div>
+      <input id="tickerIn" value="AAPL" placeholder="AAPL"
+        style="background:transparent;border:1px solid #1a3a5c;color:#e0f4ff;
+          padding:10px 16px;font-size:20px;letter-spacing:4px;width:120px;
+          border-radius:5px;text-transform:uppercase"/>
+    </div>
+    <div>
+      <div class="lbl">Period</div>
+      <div style="display:flex;gap:5px">
+        <button class="pbtn" data-v="3mo">3mo</button>
+        <button class="pbtn on" data-v="6mo">6mo</button>
+        <button class="pbtn" data-v="1y">1y</button>
+        <button class="pbtn" data-v="2y">2y</button>
+        <button class="pbtn" data-v="5y">5y</button>
+      </div>
+    </div>
+    <div>
+      <div class="lbl">Auto-selects model &middot; Technicals &middot; Entry &amp; Exit &middot; Commentary</div>
+      <button id="runBtn">&#9658;&nbsp; ANALYZE &amp; PREDICT</button>
+    </div>
+  </div>
+
+  <!-- Loader -->
+  <div id="loader" style="display:none;padding:40px 0;text-align:center">
+    <div style="color:#4fc3f7;font-size:14px;letter-spacing:4px;margin-bottom:14px">RUNNING ANALYSIS ENGINE</div>
+    <div><span class="b"></span><span class="b"></span><span class="b"></span><span class="b"></span><span class="b"></span></div>
+  </div>
+
+  <!-- Error -->
+  <div id="errBox" style="display:none;border:1px solid #c62828;background:#1a0808;padding:14px 18px;border-radius:6px;color:#ef9a9a;font-size:14px;margin-bottom:16px"></div>
+
+  <!-- Empty state -->
+  <div id="empty">
+    <h2>Enter a Ticker to Begin</h2>
+    <p>Company name &middot; Technicals &middot; AI model selection &middot; Entry &amp; exit points</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TAB NAV — single instance
+══════════════════════════════════════════════════════════════ -->
+<div id="tabNav">
+  <button class="tab-btn" data-tab="overview">
+    <span class="tab-icon">&#128200;</span>Overview
+    <span class="tab-badge" id="badge-signal">—</span>
+  </button>
+  <button class="tab-btn" data-tab="chart">
+    <span class="tab-icon">&#128202;</span>Chart
+    <span class="tab-badge" id="badge-model">—</span>
+  </button>
+  <button class="tab-btn" data-tab="technicals">
+    <span class="tab-icon">&#9881;&#65039;</span>Technicals
+    <span class="tab-badge" id="badge-rsi">—</span>
+  </button>
+  <button class="tab-btn" data-tab="trade">
+    <span class="tab-icon">&#127919;</span>Trade Setup
+    <span class="tab-badge" id="badge-trade">—</span>
+  </button>
+  <button class="tab-btn" data-tab="analysis">
+    <span class="tab-icon">&#129302;</span>AI Analysis
+    <span class="tab-badge" id="badge-sfi">—</span>
+  </button>
+  <button class="tab-btn" data-tab="options">
+    <span class="tab-icon">&#127922;</span>Options Play
+    <span class="tab-badge" id="badge-options">—</span>
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TAB PANES — each ID appears exactly ONCE
+══════════════════════════════════════════════════════════════ -->
+
+<!-- OVERVIEW -->
+<div class="tab-pane" id="pane-overview">
+  <div id="predBanner">
+    <div style="padding:12px 18px;border-bottom:1px solid #1a3a5c;background:#070d1a">
+      <div id="companyHeader" style="font-size:14px;color:#e0f4ff;letter-spacing:2px;margin-bottom:4px"></div>
+      <div style="font-size:11px;letter-spacing:2px;color:#2a5f8a" id="pMeta"></div>
+      <div style="font-size:11px;letter-spacing:2px;color:#2a5f8a;margin-top:2px" id="companyMeta"></div>
+    </div>
+    <div class="pred-grid">
+      <div class="pred-cell">
+        <div class="lbl">90-Day Price Target</div>
+        <div class="pred-big" id="pPrice"></div>
+        <div class="pred-sub" id="pDelta"></div>
+      </div>
+      <div class="pred-cell">
+        <div class="lbl">90% Confidence Range</div>
+        <div style="margin-top:6px;font-size:13px;color:#e0f4ff">
+          <span style="color:#4caf50" id="pHi"></span>
+          <span style="color:#4a7a9b"> — </span>
+          <span style="color:#ef5350" id="pLo"></span>
+        </div>
+        <div class="pred-sub">Based on historical volatility</div>
+      </div>
+      <div class="pred-cell">
+        <div class="lbl">Best-Fit Model</div>
+        <div style="margin-top:6px;font-size:13px;color:#e0f4ff" id="pModel"></div>
+        <div class="pred-sub" id="pR2"></div>
+        <div id="pConf" class="conf-chip conf-md" style="margin-top:8px"></div>
+      </div>
+      <div class="pred-cell">
+        <div class="lbl">Signal</div>
+        <div style="margin-top:6px;font-size:15px;font-weight:600" id="pSignal"></div>
+        <div class="pred-sub" id="pSignalDesc"></div>
+      </div>
+    </div>
+  </div>
+  <div id="statsBar"></div>
+</div>
+
+<!-- CHART -->
+<div class="tab-pane" id="pane-chart">
+  <div id="chartWrap">
+    <div id="chartTitle" style="font-size:9px;letter-spacing:3px;color:#2a5f8a;text-transform:uppercase;margin-bottom:8px"></div>
+    <canvas id="chartCanvas"></canvas>
+    <div class="chart-sublabel">RSI(14)</div>
+    <canvas id="rsiCanvas"></canvas>
+    <div class="chart-sublabel">Structural Fragility Index</div>
+    <canvas id="sfiCanvas"></canvas>
+    <div id="chartLegend"></div>
+    <div id="tt">
+      <div class="ttd" id="ttDate"></div>
+      <div class="ttr" id="ttRows"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TECHNICALS -->
+<div class="tab-pane" id="pane-technicals">
+  <div id="techPanel">
+    <div class="tech-hdr">
+      <span>&#9656; TECHNICAL INDICATORS</span>
+      <span class="tech-hdr-right" id="techDate"></span>
+    </div>
+    <div class="tech-grid">
+      <div class="tech-wk">
+        <div class="lbl">52-Week Range</div>
+        <div class="wk-bar-wrap">
+          <div class="wk-bar-fill" id="wkBarFill" style="background:linear-gradient(90deg,#4caf50,#ff9800)"></div>
+          <div class="wk-marker" id="wkMarker"></div>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:#e0f4ff;margin-bottom:6px" id="techCurrentPrice"></div>
+        <div class="wk-labels">
+          <span id="wk52Lo" style="color:#ef5350"></span>
+          <span id="wkCur" style="color:#e0f4ff"></span>
+          <span id="wk52Hi" style="color:#4caf50"></span>
+        </div>
+        <div style="font-size:11px;color:#4fc3f7;margin-top:5px;letter-spacing:1px" id="wkPct"></div>
+      </div>
+      <div class="tech-vwap">
+        <div class="lbl">VWAP (Period)</div>
+        <div class="vwap-big" id="vwapVal"></div>
+        <div id="vwapChip" class="vwap-chip"></div>
+        <div style="font-size:11px;color:#4a7a9b;margin-top:6px;line-height:1.5" id="vwapDesc"></div>
+      </div>
+      <div class="tech-rsi">
+        <div class="lbl">RSI (14-Period)</div>
+        <div class="rsi-big" id="rsiVal"></div>
+        <div class="rsi-zone" id="rsiZone"></div>
+        <div style="position:relative;height:8px;background:#0e2236;border-radius:4px;margin-top:10px">
+          <div style="position:absolute;top:-3px;width:3px;height:14px;background:#4fc3f7;border-radius:2px;transform:translateX(-50%)" id="rsiMarker"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:#2a5f8a;margin-top:3px">
+          <span>0</span><span>30</span><span>50</span><span>70</span><span>100</span>
+        </div>
+      </div>
+      <div class="tech-ma">
+        <div class="lbl">Moving Averages vs Price</div>
+        <div class="ma-grid" id="maGrid"></div>
+      </div>
+      <div class="tech-tail">
+        <div class="lbl">Structural Fragility Index</div>
+        <div class="sfi-big" id="sfiVal"></div>
+        <div id="sfiChip" class="sfi-chip"></div>
+        <div class="sfi-bar-wrap"><div class="sfi-marker" id="sfiMarker"></div></div>
+        <div class="sfi-labels"><span>Antifragile</span><span>Resilient</span><span>Fragile</span><span>High</span><span>Extreme</span></div>
+        <div style="margin-top:12px;border-top:1px solid #1a3a5c;padding-top:8px">
+          <div class="tail-row"><span class="tail-k">Excess Kurtosis</span><span class="tail-v" id="kurtVal"></span></div>
+          <div class="tail-row"><span class="tail-k">Skewness</span><span class="tail-v" id="skewVal"></span></div>
+          <div class="tail-row"><span class="tail-k">Vol-of-Vol</span><span class="tail-v" id="vovVal"></span></div>
+          <div class="tail-row"><span class="tail-k">Tail Signal</span><span class="tail-v" id="tailSignal"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TRADE SETUP -->
+<div class="tab-pane" id="pane-trade">
+  <div id="tradeCard">
+    <div class="trade-header">
+      <div class="trade-header-left">
+        <div style="font-size:18px">&#128202;</div>
+        <div>
+          <div class="trade-title">Trade Setup &middot; <span id="tradeperiodLabel"></span> Horizon</div>
+          <div class="trade-sub">Entry, exit &amp; stop-loss levels from price structure, volatility &amp; model forecast</div>
+        </div>
+      </div>
+      <div id="tradeBadge" class="trade-badge"></div>
+    </div>
+    <div class="trade-body">
+      <div class="ees-grid">
+        <div class="ees-cell">
+          <div class="ees-label" id="entryColLabel">Ideal Entry Zone</div>
+          <div class="ees-price" id="entryPrice" style="color:#4fc3f7"></div>
+          <div class="ees-sub" id="entrySub"></div>
+          <div class="ees-tag tag-entry" id="entryTag">ENTRY</div>
+        </div>
+        <div class="ees-cell">
+          <div class="ees-label" id="tpColLabel">Price Target</div>
+          <div class="ees-price" id="targetPrice" style="color:#4caf50"></div>
+          <div class="ees-sub" id="targetSub"></div>
+          <div class="ees-tag tag-target" id="tpTag">TAKE PROFIT</div>
+        </div>
+        <div class="ees-cell">
+          <div class="ees-label" id="stopColLabel">Stop Loss</div>
+          <div class="ees-price" id="stopPrice" style="color:#ef5350"></div>
+          <div class="ees-sub" id="stopSub"></div>
+          <div class="ees-tag tag-stop" id="stopTag">STOP LOSS</div>
+        </div>
+        <div class="ees-cell">
+          <div class="ees-label" id="exitColLabel">Exit Warning</div>
+          <div class="ees-price" id="exitPrice" style="color:#ce93d8"></div>
+          <div class="ees-sub" id="exitSub"></div>
+          <div class="ees-tag tag-exit" id="exitTag">EXIT SIGNAL</div>
+        </div>
+      </div>
+      <div class="rr-row">
+        <div class="rr-label">
+          <span>Risk / Reward Ratio</span>
+          <span class="rr-ratio" id="rrRatio"></span>
+        </div>
+        <div class="rr-bar-wrap">
+          <div class="rr-reward" id="rrRewardBar"></div>
+          <div class="rr-risk"   id="rrRiskBar"></div>
+        </div>
+        <div class="rr-legend">
+          <div class="rr-leg"><div class="rr-dot" style="background:#4caf50"></div>Potential Reward</div>
+          <div class="rr-leg"><div class="rr-dot" style="background:#ef5350"></div>Potential Risk</div>
+          <div style="font-size:11px;margin-left:auto" id="rrNote"></div>
+        </div>
+      </div>
+      <div class="level-rows" id="levelRows"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AI ANALYSIS -->
+<div class="tab-pane" id="pane-analysis">
+  <div id="commentary">
+    <div class="comm-hdr">
+      <div class="comm-icon">&#129302;</div>
+      <div>
+        <div style="font-size:11px;letter-spacing:3px;color:#4fc3f7;text-transform:uppercase">AI Analyst Commentary</div>
+        <div style="font-size:11px;color:#2a5f8a;margin-top:1px;letter-spacing:1px">Plain-English explanation of this forecast</div>
+      </div>
+    </div>
+    <div class="comm-body" id="commBody"></div>
+  </div>
+  <div id="modelRace">
+    <div class="race-hdr">&#9654; MODEL COMPETITION — R&sup2; FIT RANKING</div>
+    <div id="raceRows"></div>
+  </div>
+</div>
+
+<!-- OPTIONS PLAY -->
+<div class="tab-pane" id="pane-options">
+
+  <!-- Strategy header -->
+  <div id="optionsHeader" style="border:1px solid #1a3a5c;border-radius:8px;overflow:hidden;margin-bottom:16px">
+    <div style="background:#070d1a;padding:14px 20px;border-bottom:1px solid #1a3a5c;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:22px">&#127922;</div>
+        <div>
+          <div style="font-size:13px;letter-spacing:2px;color:#4fc3f7;text-transform:uppercase;font-weight:600">Options Play Recommendation</div>
+          <div style="font-size:11px;color:#2a5f8a;margin-top:2px">Based on model forecast · trade setup · implied volatility estimate</div>
+        </div>
+      </div>
+      <div id="optStratBadge" style="font-size:12px;letter-spacing:2px;padding:6px 14px;border-radius:5px;font-weight:600"></div>
+    </div>
+    <div id="optStratDesc" style="padding:14px 20px;font-size:13px;color:#9bbdd4;line-height:1.8;background:#060d1a"></div>
+  </div>
+
+  <!-- Primary play card -->
+  <div id="optPrimaryCard" style="border:1px solid #1a3a5c;border-radius:8px;overflow:hidden;margin-bottom:16px">
+    <div style="background:#070d1a;padding:12px 20px;border-bottom:1px solid #1a3a5c;font-size:11px;letter-spacing:3px;color:#2a5f8a;text-transform:uppercase" id="optPrimaryTitle">Primary Play</div>
+    <div style="background:#07101a">
+      <!-- Strike grid -->
+      <div style="display:flex;flex-wrap:wrap;border-bottom:1px solid #1a3a5c" id="optStrikeGrid">
+        <div style="flex:1 1 150px;padding:18px 20px;border-right:1px solid #1a3a5c">
+          <div style="font-size:11px;letter-spacing:2px;color:#2a5f8a;text-transform:uppercase;margin-bottom:6px">Recommended Strike</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:3px;line-height:1" id="optStrike1"></div>
+          <div style="font-size:11px;color:#4a7a9b;margin-top:5px" id="optStrike1Sub"></div>
+          <div style="display:inline-block;font-size:10px;letter-spacing:2px;padding:3px 9px;border-radius:3px;margin-top:8px;font-weight:600" id="optStrike1Tag"></div>
+        </div>
+        <div style="flex:1 1 150px;padding:18px 20px;border-right:1px solid #1a3a5c">
+          <div style="font-size:11px;letter-spacing:2px;color:#2a5f8a;text-transform:uppercase;margin-bottom:6px">Expiration Window</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:3px;line-height:1;color:#ff9800" id="optDTE"></div>
+          <div style="font-size:11px;color:#4a7a9b;margin-top:5px" id="optDTESub"></div>
+        </div>
+        <div style="flex:1 1 150px;padding:18px 20px;border-right:1px solid #1a3a5c">
+          <div style="font-size:11px;letter-spacing:2px;color:#2a5f8a;text-transform:uppercase;margin-bottom:6px">Est. Option Premium</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:3px;line-height:1;color:#ce93d8" id="optPremium"></div>
+          <div style="font-size:11px;color:#4a7a9b;margin-top:5px" id="optPremiumSub"></div>
+        </div>
+        <div style="flex:1 1 150px;padding:18px 20px">
+          <div style="font-size:11px;letter-spacing:2px;color:#2a5f8a;text-transform:uppercase;margin-bottom:6px">Breakeven at Expiry</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:3px;line-height:1" id="optBE"></div>
+          <div style="font-size:11px;color:#4a7a9b;margin-top:5px" id="optBESub"></div>
+        </div>
+      </div>
+      <!-- Greeks row -->
+      <div style="display:flex;flex-wrap:wrap;padding:14px 20px;gap:20px;border-bottom:1px solid #1a3a5c" id="optGreeks">
+        <div style="min-width:100px">
+          <div style="font-size:10px;letter-spacing:2px;color:#2a5f8a;margin-bottom:4px">DELTA (Δ)</div>
+          <div style="font-size:16px;font-weight:600" id="optDelta"></div>
+          <div style="font-size:10px;color:#4a7a9b">directional exposure</div>
+        </div>
+        <div style="min-width:100px">
+          <div style="font-size:10px;letter-spacing:2px;color:#2a5f8a;margin-bottom:4px">MONEYNESS</div>
+          <div style="font-size:16px;font-weight:600" id="optMoneyness"></div>
+          <div style="font-size:10px;color:#4a7a9b">strike vs spot</div>
+        </div>
+        <div style="min-width:100px">
+          <div style="font-size:10px;letter-spacing:2px;color:#2a5f8a;margin-bottom:4px">IV ESTIMATE</div>
+          <div style="font-size:16px;font-weight:600" id="optIV"></div>
+          <div style="font-size:10px;color:#4a7a9b">from hist. volatility</div>
+        </div>
+        <div style="min-width:100px">
+          <div style="font-size:10px;letter-spacing:2px;color:#2a5f8a;margin-bottom:4px">MAX PROFIT</div>
+          <div style="font-size:16px;font-weight:600" id="optMaxProfit"></div>
+          <div style="font-size:10px;color:#4a7a9b">at expiry if target hit</div>
+        </div>
+        <div style="min-width:100px">
+          <div style="font-size:10px;letter-spacing:2px;color:#2a5f8a;margin-bottom:4px">MAX LOSS</div>
+          <div style="font-size:16px;font-weight:600;color:#ef5350" id="optMaxLoss"></div>
+          <div style="font-size:10px;color:#4a7a9b">premium paid (1 contract)</div>
+        </div>
+        <div style="min-width:100px">
+          <div style="font-size:10px;letter-spacing:2px;color:#2a5f8a;margin-bottom:4px">CONTRACT MULT.</div>
+          <div style="font-size:16px;font-weight:600;color:#4a7a9b">100 shares</div>
+          <div style="font-size:10px;color:#4a7a9b">standard US contract</div>
+        </div>
+      </div>
+      <!-- Key levels -->
+      <div style="padding:14px 20px" id="optLevelRows"></div>
+    </div>
+  </div>
+
+  <!-- Alternative strikes -->
+  <div style="border:1px solid #1a3a5c;border-radius:8px;overflow:hidden;margin-bottom:16px">
+    <div style="background:#070d1a;padding:11px 20px;border-bottom:1px solid #1a3a5c;font-size:11px;letter-spacing:3px;color:#2a5f8a;text-transform:uppercase">Strike Ladder — Nearby Options</div>
+    <div id="optLadder" style="background:#07101a"></div>
+  </div>
+
+  <!-- Disclaimer -->
+  <div style="border:1px solid #7a3a1a;border-radius:6px;padding:14px 18px;background:#120a04;font-size:12px;color:#a07060;line-height:1.8">
+    <b style="color:#ff9800">&#9888; Options Disclaimer:</b> Options involve significant risk and are not suitable for all investors. Premium estimates use simplified Black-Scholes with historical volatility as an IV proxy — actual market premiums will differ. This is not a recommendation to trade options. Verify all strikes and premiums with your broker before trading. Options can expire worthless, resulting in total loss of premium paid.
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div style="padding:0 20px">
+  <div id="footer">FOR EDUCATIONAL &amp; INFORMATIONAL PURPOSES ONLY &middot; NOT FINANCIAL ADVICE &middot; ALWAYS CONSULT A LICENSED ADVISOR &middot; SFI inspired by Taleb / Spitznagel academic frameworks</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// TAB ENGINE — pure inline-style, no CSS class fighting
+// ══════════════════════════════════════════════════════════════════
+var TAB_NAMES = ['overview','chart','technicals','trade','analysis','options'];
+
+function showTab(name) {
+  // Buttons
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.tab === name);
+  });
+  // Panes — set display directly via inline style
+  TAB_NAMES.forEach(function(t) {
+    var pane = document.getElementById('pane-' + t);
+    if (!pane) return;
+    if (t === name) {
+      pane.style.display = 'block';
+      pane.classList.add('tab-pane-visible');
+    } else {
+      pane.style.display = 'none';
+      pane.classList.remove('tab-pane-visible');
+    }
+  });
+  // Redraw charts when chart tab activated (canvas needs visible parent)
+  if (name === 'chart' && G && G.labels && G.labels.length) {
+    setTimeout(function() {
+      drawPriceChart(G.labels, G.sets, G.forecastAt, G.entryP, G.stopP, G.tpP);
+      drawRSIChart(G.labels, G.rsiData, G.forecastAt);
+      if (G.sfiData) drawSFIChart(G.labels, G.sfiData, G.forecastAt);
+    }, 30);
+  }
+}
+
+// Hide all panes on startup
+TAB_NAMES.forEach(function(t) {
+  var p = document.getElementById('pane-' + t);
+  if (p) p.style.display = 'none';
+});
+
+// Wire tab buttons
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() { showTab(btn.dataset.tab); });
+});
+
+// Also expose as switchTab for go() to call
+function switchTab(name) { showTab(name); }
+
+// ══════════════════════════════════════════════════════════════════
+// BADGE UPDATER
+// ══════════════════════════════════════════════════════════════════
+function updateBadges(signal, modelName, rsi, tradeMode, sfiScore) {
+  var sb = document.getElementById('badge-signal');
+  var sl = (signal || '').toLowerCase();
+  if (sl.indexOf('bull') >= 0) { sb.textContent = signal; sb.className = 'tab-badge green'; }
+  else if (sl.indexOf('bear') >= 0) { sb.textContent = signal; sb.className = 'tab-badge red'; }
+  else { sb.textContent = signal; sb.className = 'tab-badge amber'; }
+
+  var mb = document.getElementById('badge-model');
+  mb.textContent = modelName; mb.className = 'tab-badge';
+
+  var rb = document.getElementById('badge-rsi');
+  if (rsi !== null && rsi !== undefined) {
+    rb.textContent = 'RSI ' + rsi.toFixed(0);
+    rb.className = rsi > 70 ? 'tab-badge red' : rsi < 30 ? 'tab-badge green' : 'tab-badge';
+  }
+
+  var tb = document.getElementById('badge-trade');
+  if (tradeMode === 'bull')    { tb.textContent = 'BUY SETUP'; tb.className = 'tab-badge green'; }
+  else if (tradeMode === 'bear') { tb.textContent = 'AVOID';   tb.className = 'tab-badge red';   }
+  else                          { tb.textContent = 'WATCH';    tb.className = 'tab-badge amber';  }
+
+  var sf = document.getElementById('badge-sfi');
+  sf.textContent = 'SFI ' + sfiScore.toFixed(0);
+  sf.className = sfiScore >= 60 ? 'tab-badge red' : sfiScore < 30 ? 'tab-badge green' : 'tab-badge amber';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ANALYSIS ENGINE (original JS — unchanged)
+// ══════════════════════════════════════════════════════════════════
+
+// ── TAB SYSTEM ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(function(btn){
+  btn.onclick = function(){ switchTab(btn.dataset.tab); };
+});
+
+function switchTab(name){
+  // Update button states
+  document.querySelectorAll('.tab-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tab===name);
+  });
+  // Show/hide panes via inline style (overrides ALL CSS)
+  var panes = ['overview','chart','technicals','trade','analysis'];
+  panes.forEach(function(p){
+    var el = document.getElementById('pane-'+p);
+    if(el) el.style.display = (p===name) ? 'block' : 'none';
+  });
+  // Redraw charts when chart tab activated
+  if(name==='chart' && G.labels && G.labels.length){
+    setTimeout(function(){
+      drawPriceChart(G.labels,G.sets,G.forecastAt,G.entryP,G.stopP,G.tpP);
+      drawRSIChart(G.labels,G.rsiData,G.forecastAt);
+      if(G.sfiData) drawSFIChart(G.labels,G.sfiData,G.forecastAt);
+    },30);
+  }
+}
+
+// ── Init: all panes hidden until analysis runs ──────────────────
+(function(){
+  var panes = ['overview','chart','technicals','trade','analysis'];
+  panes.forEach(function(p){
+    var el = document.getElementById('pane-'+p);
+    if(el) el.style.display = 'none';
+  });
+})();
+
+function updateBadges(signal, modelName, rsi, tradeMode, sfiScore){
+  var sb = document.getElementById('badge-signal');
+  if(signal.indexOf('Bull')>=0||signal.indexOf('BULL')>=0){sb.textContent=signal;sb.className='tab-badge green';}
+  else if(signal.indexOf('Bear')>=0||signal.indexOf('BEAR')>=0){sb.textContent=signal;sb.className='tab-badge red';}
+  else{sb.textContent=signal;sb.className='tab-badge amber';}
+  var mb=document.getElementById('badge-model');
+  mb.textContent=modelName; mb.className='tab-badge';
+  var rb=document.getElementById('badge-rsi');
+  if(rsi!==null){
+    rb.textContent='RSI '+rsi.toFixed(0);
+    rb.className=rsi>70?'tab-badge red':rsi<30?'tab-badge green':'tab-badge';
+  }
+  var tb=document.getElementById('badge-trade');
+  if(tradeMode==='bull'){tb.textContent='BUY SETUP';tb.className='tab-badge green';}
+  else if(tradeMode==='bear'){tb.textContent='AVOID';tb.className='tab-badge red';}
+  else{tb.textContent='WATCH';tb.className='tab-badge amber';}
+  var sf=document.getElementById('badge-sfi');
+  sf.textContent='SFI '+sfiScore.toFixed(0);
+  sf.className=sfiScore>=60?'tab-badge red':sfiScore<30?'tab-badge green':'tab-badge amber';
+}
+
+
+var period = "6mo";
+var G = {labels:[],sets:[],forecastAt:0,rsiData:[],allLabels:[]};
+var PAD = {T:20,R:18,B:36,L:68};
+var RPAD = {T:10,R:18,B:28,L:68};
+
+document.querySelectorAll(".pbtn").forEach(function(b){
+  b.onclick=function(){document.querySelectorAll(".pbtn").forEach(function(x){x.classList.remove("on");});b.classList.add("on");period=b.dataset.v;};
+});
+document.getElementById("tickerIn").addEventListener("keydown",function(e){if(e.key==="Enter")go();});
+document.getElementById("runBtn").onclick=go;
+
+// ── Math helpers ──────────────────────────────────────────────────────────────
+function calcSMA(px,w){return px.map(function(_,i){if(i<w-1)return null;return px.slice(i-w+1,i+1).reduce(function(a,b){return a+b;},0)/w;});}
+
+function calcRSI(px,w){
+  w=w||14;
+  var rsi=new Array(px.length).fill(null);
+  if(px.length<w+1)return rsi;
+  var gains=0,losses=0;
+  for(var i=1;i<=w;i++){var d=px[i]-px[i-1];if(d>0)gains+=d;else losses-=d;}
+  var ag=gains/w,al=losses/w;
+  rsi[w]= al===0 ? 100 : 100-100/(1+ag/al);
+  for(var i=w+1;i<px.length;i++){
+    var d=px[i]-px[i-1],g=d>0?d:0,l=d<0?-d:0;
+    ag=(ag*(w-1)+g)/w; al=(al*(w-1)+l)/w;
+    rsi[i]= al===0 ? 100 : 100-100/(1+ag/al);
+  }
+  return rsi;
+}
+
+function calcVWAP(px,vol){
+  var sumPV=0,sumV=0;
+  for(var i=0;i<px.length;i++){
+    if(vol[i]&&vol[i]>0){sumPV+=px[i]*vol[i];sumV+=vol[i];}
+  }
+  return sumV>0 ? sumPV/sumV : null;
+}
+
+// ── Regression models ─────────────────────────────────────────────────────────
+function linReg(px){
+  var n=px.length,sx=0,sy=0,sxy=0,sx2=0;
+  for(var i=0;i<n;i++){sx+=i;sy+=px[i];sxy+=i*px[i];sx2+=i*i;}
+  var sl=(n*sxy-sx*sy)/(n*sx2-sx*sx),ic=(sy-sl*sx)/n,pd=[];
+  for(var i=0;i<n;i++)pd.push(ic+sl*i);
+  var ss=0,st=0,my=sy/n;
+  for(var i=0;i<n;i++){ss+=(px[i]-pd[i])**2;st+=(px[i]-my)**2;}
+  return{pred:pd,r2:1-ss/st,extrapolate:function(s){return ic+sl*(n-1+s);}};
+}
+function polyReg(px,deg){
+  var n=px.length,xs=px.map(function(_,i){return i/(n-1);});
+  var mat=[];
+  for(var i=0;i<=deg;i++){mat.push([]);for(var j=0;j<=deg+1;j++){var s=0;if(j===deg+1){for(var k=0;k<n;k++)s+=Math.pow(xs[k],i)*px[k];}else{for(var k=0;k<n;k++)s+=Math.pow(xs[k],i+j);}mat[i].push(s);}}
+  for(var i=0;i<=deg;i++){var mr=i;for(var k=i+1;k<=deg;k++)if(Math.abs(mat[k][i])>Math.abs(mat[mr][i]))mr=k;var t=mat[i];mat[i]=mat[mr];mat[mr]=t;for(var k=i+1;k<=deg;k++){var f=mat[k][i]/mat[i][i];for(var j=i;j<=deg+1;j++)mat[k][j]-=f*mat[i][j];}}
+  var c=new Array(deg+1).fill(0);
+  for(var i=deg;i>=0;i--){c[i]=mat[i][deg+1];for(var j=i+1;j<=deg;j++)c[i]-=mat[i][j]*c[j];c[i]/=mat[i][i];}
+  var pd=xs.map(function(x){return c.reduce(function(a,ci,k){return a+ci*Math.pow(x,k);},0);});
+  var ss=0,st=0,my=px.reduce(function(a,b){return a+b;},0)/n;
+  for(var i=0;i<n;i++){ss+=(px[i]-pd[i])**2;st+=(px[i]-my)**2;}
+  return{pred:pd,r2:1-ss/st,extrapolate:function(s){var x=(n-1+s)/(n-1);return c.reduce(function(a,ci,k){return a+ci*Math.pow(x,k);},0);}};
+}
+function expReg(px){
+  var n=px.length,logs=[],idxs=[];
+  for(var i=0;i<n;i++){if(px[i]>0){logs.push(Math.log(px[i]));idxs.push(i);}}
+  if(logs.length<4)return null;
+  var nv=logs.length,sx=0,sy=0,sxy=0,sx2=0;
+  for(var i=0;i<nv;i++){sx+=idxs[i];sy+=logs[i];sxy+=idxs[i]*logs[i];sx2+=idxs[i]*idxs[i];}
+  var b=(nv*sxy-sx*sy)/(nv*sx2-sx*sx),a=Math.exp((sy-b*sx)/nv);
+  var pd=px.map(function(_,i){return a*Math.exp(b*i);});
+  var ss=0,st=0,my=px.reduce(function(a,b){return a+b;},0)/n;
+  for(var i=0;i<n;i++){ss+=(px[i]-pd[i])**2;st+=(px[i]-my)**2;}
+  return{pred:pd,r2:1-ss/st,extrapolate:function(s){return Math.min(px[n-1]*5,a*Math.exp(b*(n-1+s)));}};
+}
+function logReg(px){
+  var n=px.length,xs=px.map(function(_,i){return Math.log(i+1);});
+  var sx=0,sy=0,sxy=0,sx2=0;
+  for(var i=0;i<n;i++){sx+=xs[i];sy+=px[i];sxy+=xs[i]*px[i];sx2+=xs[i]*xs[i];}
+  var d=n*sx2-sx*sx,b=d?(n*sxy-sx*sy)/d:0,a=(sy-b*sx)/n;
+  var pd=xs.map(function(xi){return a+b*xi;});
+  var ss=0,st=0,my=sy/n;
+  for(var i=0;i<n;i++){ss+=(px[i]-pd[i])**2;st+=(px[i]-my)**2;}
+  return{pred:pd,r2:1-ss/st,extrapolate:function(s){return a+b*Math.log(n+s);}};
+}
+function runModels(px){
+  var cands=[
+    {name:"Linear Trend",fn:function(){return linReg(px);}},
+    {name:"Quadratic Fit",fn:function(){return polyReg(px,2);}},
+    {name:"Cubic Fit",fn:function(){return polyReg(px,3);}},
+    {name:"Exponential",fn:function(){return expReg(px);}},
+    {name:"Logarithmic",fn:function(){return logReg(px);}},
+  ];
+  var res=[];
+  cands.forEach(function(c){try{var r=c.fn();if(!r)return;var adj=r.r2-(c.name==="Cubic Fit"?0.025:0);res.push({name:c.name,r2:r.r2,adjR2:adj,model:r});}catch(e){}});
+  return res.sort(function(a,b){return b.adjR2-a.adjR2;});
+}
+function forecast90(best,px){
+  var n=px.length,last=px[n-1],steps=63;
+  var target=best.model.extrapolate(steps);
+  target=Math.max(last*0.15,Math.min(last*6,target));
+  var rets=px.slice(1).map(function(p,i){return(p-px[i])/px[i];});
+  var dv=Math.sqrt(rets.reduce(function(a,b){return a+b*b;},0)/rets.length);
+  var v90=dv*Math.sqrt(steps);
+  var numPts=Math.ceil(steps/3),fPts=[],fHi=[],fLo=[];
+  for(var i=1;i<=numPts;i++){var s=i*3,v=best.model.extrapolate(s);v=Math.max(last*0.15,Math.min(last*6,v));var cv=dv*Math.sqrt(s)*1.645;fPts.push(+v.toFixed(4));fHi.push(+(v*(1+cv)).toFixed(4));fLo.push(+(v*(1-cv)).toFixed(4));}
+  return{target:target,hi:target*(1+v90*1.645),lo:target*(1-v90*1.645),v90:v90,dv:dv,fPts:fPts,fHi:fHi,fLo:fLo,numPts:numPts,annVol:dv*Math.sqrt(252)};
+}
+
+// ── Support / Resistance / ATR ────────────────────────────────────────────────
+function findSR(px,lookback){
+  var w=Math.min(lookback,px.length),recent=px.slice(-w);
+  var hi=Math.max.apply(null,recent),lo=Math.min.apply(null,recent);
+  var sLows=[],sHighs=[];
+  for(var i=2;i<recent.length-2;i++){
+    if(recent[i]<recent[i-1]&&recent[i]<recent[i-2]&&recent[i]<recent[i+1]&&recent[i]<recent[i+2])sLows.push(recent[i]);
+    if(recent[i]>recent[i-1]&&recent[i]>recent[i-2]&&recent[i]>recent[i+1]&&recent[i]>recent[i+2])sHighs.push(recent[i]);
+  }
+  sLows.sort(function(a,b){return a-b;});sHighs.sort(function(a,b){return b-a;});
+  return{support:sLows.length>=2?(sLows[0]+sLows[1])/2:lo, resistance:sHighs.length>=2?(sHighs[0]+sHighs[1])/2:hi};
+}
+function calcATR(px,days){
+  var w=Math.min(days,px.length-1),ranges=[];
+  for(var i=px.length-w;i<px.length;i++)ranges.push(Math.abs(px[i]-px[i-1]));
+  return ranges.reduce(function(a,b){return a+b;},0)/ranges.length;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STRUCTURAL FRAGILITY INDEX — Port of fragility_engine.py
+// Based on Nassim Nicholas Taleb's tail-risk / fragility theory and
+// Mark Spitznagel's convexity-of-loss framework
+//
+// Signal construction (exact port from Python):
+//   LogRet[i]     = log(px[i] / px[i-1])
+//   ATR_Pct[i]    = ATR_14[i] / px[i]
+//   Kurt_60       = excess kurtosis of LogRet, rolling 60-bar
+//   VolOfVol_60   = rolling std of ATR_Pct, 60-bar
+//   rolling_z()   = (x - mu_252) / sigma_252  clipped to [-3, +3]
+//   raw           = 0.60 * z(Kurt_60) + 0.40 * z(VolOfVol_60)
+//   SFI           = clip(50 + raw * 15, 0, 100)
+//   Skew_60       = 3rd moment skew for directional bias (display only)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function computeLogReturns(px) {
+  var lr = [null];
+  for (var i = 1; i < px.length; i++) lr.push(px[i] > 0 && px[i-1] > 0 ? Math.log(px[i]/px[i-1]) : null);
+  return lr;
+}
+
+function computeATRPct(px, w) {
+  w = w || 14;
+  var atrPct = new Array(px.length).fill(null);
+  for (var i = w; i < px.length; i++) {
+    var ranges = [];
+    for (var j = i - w + 1; j <= i; j++) ranges.push(Math.abs(px[j] - px[j-1]));
+    var atr = ranges.reduce(function(a,b){return a+b;},0) / w;
+    if (px[i] > 0) atrPct[i] = atr / px[i];
+  }
+  return atrPct;
+}
+
+function rolling(arr, w, fn) {
+  var out = new Array(arr.length).fill(null);
+  for (var i = w - 1; i < arr.length; i++) {
+    var win = [];
+    for (var j = i - w + 1; j <= i; j++) { if (arr[j] != null) win.push(arr[j]); }
+    if (win.length >= Math.floor(w * 0.7)) out[i] = fn(win);
+  }
+  return out;
+}
+
+function mean(arr)  { return arr.reduce(function(a,b){return a+b;},0)/arr.length; }
+function variance(arr) { var m=mean(arr); return arr.reduce(function(a,b){return a+(b-m)*(b-m);},0)/arr.length; }
+function stddev(arr)   { return Math.sqrt(variance(arr)); }
+
+function rollingKurt60(logRet) {
+  return rolling(logRet, 60, function(win) {
+    if (win.length < 15) return null;
+    var m = mean(win), sd = stddev(win);
+    if (sd === 0) return 0;
+    var k4 = win.reduce(function(a,b){return a+Math.pow((b-m)/sd,4);},0)/win.length;
+    return k4 - 3; // excess kurtosis (Taleb: the fat-tail signal)
+  });
+}
+
+function rollingSkew60(logRet) {
+  return rolling(logRet, 60, function(win) {
+    if (win.length < 15) return null;
+    var m = mean(win), sd = stddev(win);
+    if (sd === 0) return 0;
+    return win.reduce(function(a,b){return a+Math.pow((b-m)/sd,3);},0)/win.length;
+  });
+}
+
+function rollingVolOfVol60(atrPct) {
+  return rolling(atrPct, 60, function(win) {
+    if (win.length < 10) return null;
+    return stddev(win);
+  });
+}
+
+function rollingZ(arr, win) {
+  // rolling_z(s, win=252) from Python, clipped [-3, +3]
+  win = win || 252;
+  var out = new Array(arr.length).fill(null);
+  for (var i = win - 1; i < arr.length; i++) {
+    var window = [];
+    for (var j = i - win + 1; j <= i; j++) { if (arr[j] != null) window.push(arr[j]); }
+    if (window.length < 30) continue;
+    var mu = mean(window), sd = stddev(window);
+    if (arr[i] == null) continue;
+    var z = sd > 0 ? (arr[i] - mu) / sd : 0;
+    out[i] = Math.max(-3, Math.min(3, z));
+  }
+  return out;
+}
+
+function computeSFI(px) {
+  var logRet = computeLogReturns(px);
+  var atrPct = computeATRPct(px, 14);
+  var kurt60 = rollingKurt60(logRet);
+  var skew60 = rollingSkew60(logRet);
+  var vov60  = rollingVolOfVol60(atrPct);
+  var kZ     = rollingZ(kurt60, 252);
+  var vZ     = rollingZ(vov60, 252);
+
+  var sfi = new Array(px.length).fill(50);
+  for (var i = 0; i < px.length; i++) {
+    if (kZ[i] != null && vZ[i] != null) {
+      var raw = 0.60 * kZ[i] + 0.40 * vZ[i];
+      sfi[i] = Math.max(0, Math.min(100, 50 + raw * 15));
+    }
+  }
+
+  // Last valid values for display
+  var lastSFI = 50, lastKurt = null, lastSkew = null, lastVoV = null;
+  for (var i = sfi.length-1; i >= 0; i--) {
+    if (sfi[i] !== 50 || kZ[i] != null) { lastSFI = sfi[i]; break; }
+  }
+  for (var i = kurt60.length-1; i >= 0; i--) { if (kurt60[i] != null) { lastKurt = kurt60[i]; break; } }
+  for (var i = skew60.length-1; i >= 0; i--) { if (skew60[i] != null) { lastSkew = skew60[i]; break; } }
+  for (var i = vov60.length-1; i >= 0; i--) { if (vov60[i] != null) { lastVoV = vov60[i]; break; } }
+
+  return { sfi: sfi, lastSFI: lastSFI, kurt: lastKurt, skew: lastSkew, vov: lastVoV, kZ: kZ, vZ: vZ };
+}
+
+// ── Taleb / Spitznagel Interpretation ────────────────────────────────────────
+// "The fragile wants tranquility, the antifragile gains from disorder." — N.N. Taleb
+// Spitznagel: hedge when convexity of loss is high, not when loss has already occurred
+function interpretSFI(sfi, kurt, skew, vov, chg90) {
+  var level, chip, color, desc, talebs, spitz;
+
+  if (sfi < 20) {
+    level = "ANTIFRAGILE"; color = "#4caf50";
+    chip  = "LOW FRAGILITY";
+    desc  = "Returns are thin-tailed. The distribution is well-behaved. Conventional models (VaR, normal-curve forecasts) are more reliable here.";
+    talebs = "Fat-tail risk is low. Taleb would call this a 'Mediocristan' regime — outcomes cluster near the mean, extremes are rare.";
+    spitz = "Low convexity of loss. Spitznagel: standard diversification is adequate. Tail hedges are not urgently needed here.";
+  } else if (sfi < 40) {
+    level = "RESILIENT";  color = "#81c784";
+    chip  = "BELOW AVERAGE";
+    desc  = "Modest tail risk. Distribution shows mild excess kurtosis. Keep normal risk management in place.";
+    talebs = "Tails are slightly fatter than normal but not extreme. Mildly elevated Black Swan risk — remains manageable.";
+    spitz = "Convexity of loss is modest. Incremental position sizing adjustments may be warranted but no significant hedge needed.";
+  } else if (sfi < 60) {
+    level = "FRAGILE";    color = "#ff9800";
+    chip  = "ELEVATED";
+    desc  = "Fat tails and/or rising vol-of-vol detected. Model forecasts carry more uncertainty than R² alone suggests.";
+    talebs = "In 'Extremistan' territory. The next move could be larger than history suggests. Normal distribution models understate true risk.";
+    spitz = "Convexity of loss is rising. Spitznagel would reduce gross exposure and consider asymmetric hedges (tail options, put spreads).";
+  } else if (sfi < 80) {
+    level = "HIGH FRAGILITY"; color = "#ef5350";
+    chip  = "HIGH RISK";
+    desc  = "Significant kurtosis and volatility instability. The '90-day forecast' price target should be treated as a central estimate only — tails are wide.";
+    talebs = "Classic pre-fragility signature. Taleb: the system is paying 'hidden rent' — building up risk that will unwind suddenly, not gradually.";
+    spitz = "Spitznagel: this is precisely when conventional risk models are most deceptive. Positive carry is masking potential ruin-level losses.";
+  } else {
+    level = "EXTREME FRAGILITY"; color = "#b71c1c";
+    chip  = "TAIL RISK EVENT";
+    desc  = "Extreme kurtosis or vol-of-vol spike. Historical analogues include periods preceding sharp drawdowns. Do not size positions normally.";
+    talebs = "Taleb: the distribution has moved deep into Extremistan. The 'turkey problem' — apparent stability masking catastrophic fragility. Uncertainty ≠ risk; this is deeper uncertainty.";
+    spitz = "Spitznagel: maximum defensive posture. Universa-style: the expected value of holding unhedged here is negative due to ruin risk. Treat all forecasts as directional guides only, not price targets.";
+  }
+
+  // Skew directional warning
+  var skewNote = "";
+  if (skew != null) {
+    if (skew < -0.5)      skewNote = "Negative skew (" + skew.toFixed(2) + "): left-tail heavier — crash risk exceeds rally risk.";
+    else if (skew > 0.5)  skewNote = "Positive skew (+" + skew.toFixed(2) + "): right-tail heavier — asymmetric upside potential.";
+    else                  skewNote = "Near-zero skew (" + skew.toFixed(2) + "): tail risk is roughly symmetric.";
+  }
+
+  return { level: level, chip: chip, color: color, desc: desc, talebs: talebs, spitz: spitz, skewNote: skewNote };
+}
+
+
+// ── Trade Setup ───────────────────────────────────────────────────────────────
+function calcTradeSetup(px,fc,per,chg90,last,r2){
+  var pd={"3mo":20,"6mo":40,"1y":60,"2y":80,"5y":100};
+  var lookback=pd[per]||40;
+  var sr=findSR(px,lookback);
+  var atr=calcATR(px,Math.min(14,lookback));
+  var am=r2>0.75?1.2:1.8;
+  if(chg90>2){
+    var dip=Math.max(sr.support,last-atr*1.5),entry,es,en;
+    if((last-dip)/last<0.015){entry=last;es="Price is near support - current price is a valid entry";en="current price is at a good entry level";}
+    else{entry=dip;es="Wait for a pullback to this support zone before buying";en="a slight dip to this level offers better risk/reward";}
+    var cons=entry+(fc.target-entry)*0.70,tp,ts2;
+    if(sr.resistance>entry&&sr.resistance<fc.target){tp=sr.resistance;ts2="Near resistance zone - a realistic first profit-taking level";}
+    else{tp=cons;ts2="70% of the 90-day model target - conservative take-profit";}
+    var sl=Math.max(sr.support-atr*am,entry*0.88),sls="Below key support - exit if price breaks down";
+    var ex=entry-atr*0.5,exs="If price dips below this after entry, bullish setup may be failing";
+    var rw=tp-entry,rk=entry-sl,rr=rk>0?rw/rk:0;
+    return{mode:"bull",entry:entry,entrySub:es,entryNote:en,takeProfit:tp,tpSub:ts2,stopLoss:sl,slSub:sls,exitSignal:ex,exitSub:exs,rr:rr,rewardPct:rw/(rw+rk)*100,riskPct:rk/(rw+rk)*100,atr:atr,support:sr.support,resistance:sr.resistance};
+  }
+  if(chg90>=-2){
+    var bE=sr.resistance+atr*0.5,bT=bE+Math.abs(fc.target-bE)*0.75,hS=Math.max(sr.support-atr*am,last*0.90);
+    var rn=Math.abs(bT-bE),rk2=Math.abs(bE-hS);
+    return{mode:"neutral",entry:bE,entrySub:"Only buy if price BREAKS ABOVE this resistance with strong volume",entryNote:"wait for confirmed breakout before committing capital",takeProfit:bT,tpSub:"Target if breakout occurs",stopLoss:hS,slSub:"If you currently hold - exit here to protect downside",exitSignal:sr.support,exitSub:"If price breaks below this support, reduce exposure",rr:rk2>0?rn/rk2:0,rewardPct:50,riskPct:50,atr:atr,support:sr.support,resistance:sr.resistance};
+  }
+  var hs=Math.max(last-atr*(am+0.5),last*0.91),ee=last-atr*0.8,rw2=reWatch=fc.target*1.08,rc=rw2+atr*2;
+  return{mode:"bear",entry:rc,entrySub:"DO NOT BUY - only re-enter if price recovers and closes above this level",entryNote:"wait for confirmed trend reversal before buying",takeProfit:rc+(last-rc)*0.4,tpSub:"Conservative recovery target once downtrend reverses",stopLoss:hs,slSub:"If you CURRENTLY HOLD - exit here to cut your losses",exitSignal:ee,exitSub:"Early warning - if price drops below here, selling pressure is accelerating",rr:0,rewardPct:25,riskPct:75,atr:atr,support:sr.support,resistance:sr.resistance,downsideRisk:last-fc.target};
+}
+
+// ── Commentary ────────────────────────────────────────────────────────────────
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function generateCommentary(info){
+  var ticker=info.ticker,last=info.last,target=info.target,chg90=info.chg90,pchg=info.pchg;
+  var hi=info.hi,lo=info.lo,mName=info.modelName,r2=info.r2,annVol=info.annVol*100;
+  var conf=info.conf,per=info.period,n=info.n,ts=info.tradeSetup;
+  var rsi=info.rsi,absPchg=Math.abs(pchg).toFixed(1);
+  var dw=pchg>=0?"gained":"fallen",mw=pchg>=15?"a strong run":pchg>=5?"solid growth":pchg>=-5?"relatively flat":pchg>=-15?"a noticeable pullback":"a significant decline";
+  var p1="Over the past <b>"+per+"</b>, <b>"+ticker+"</b> has "+dw+" about <b>"+absPchg+"%</b>, reflecting "+mw+". The stock is currently at <b>$"+last.toFixed(2)+"</b>. "+(annVol>50?"It has been quite volatile - bigger swings in both directions are normal. ":annVol>30?"Volatility has been moderate, with regular ups and downs. ":"Volatility has been relatively calm with steady movement. ")+"We analysed <b>"+n+" trading days</b> to build this forecast.";
+  var me={"Linear Trend":"The price has been moving in a fairly straight line - steadily up or down without much curve.","Quadratic Fit":"The price has been curving - it may have sped up or slowed down over time. A straight line would not capture that shape.","Cubic Fit":"The price has gone through multiple directional changes. The model bends to match these shifts more closely.","Exponential":"The price has been growing or falling at an accelerating pace - like compound interest.","Logarithmic":"The price made a big move early and then started to level off. This model captures that fading momentum."};
+  var p2="Out of five models tested, <b>"+mName+"</b> was the best fit. "+me[mName]+" It explains about <b>"+(r2*100).toFixed(1)+"%</b> of "+ticker+"'s price movements. "+(r2>0.85?"A very strong fit.":r2>0.60?"A reasonably good fit, though daily noise isn't fully explained.":"A moderate fit - the direction is captured but there's meaningful variation.");
+  var ac=Math.abs(chg90).toFixed(1),ud=chg90>=0?"rise":"fall",bw=chg90>=0?"up to":"down to";
+  var fw=chg90>15?"That would be a very strong gain":chg90>5?"A healthy gain":chg90>0?"A modest upward move":chg90>-5?"A slight dip":chg90>-15?"A meaningful decline":"A sharp drop";
+  var rsiNote="";
+  if(rsi!==null){rsiNote=rsi>70?" The RSI of "+rsi.toFixed(0)+" signals the stock may be <b class='warn'>overbought</b> - some near-term pullback is common from this level.":rsi<30?" The RSI of "+rsi.toFixed(0)+" signals the stock may be <b class='up'>oversold</b> - a bounce or reversal is possible.":"  The RSI of "+rsi.toFixed(0)+" sits in neutral territory, with no extreme signal.";}
+  var p3="The model predicts the price could <b>"+ud+" "+bw+" around $"+target.toFixed(2)+"</b> over the next 90 days - a change of about <b>"+ac+"%</b>. "+fw+" from today's $"+last.toFixed(2)+". The 90% confidence band spans <b>$"+lo.toFixed(2)+"</b> to <b>$"+hi.toFixed(2)+"</b>."+rsiNote;
+  var rrStr=ts.rr.toFixed(2);
+  var p4;
+  if(ts.mode==="bull"){p4="The trade setup suggests entering around <b>$"+ts.entry.toFixed(2)+"</b> with a take-profit near <b>$"+ts.takeProfit.toFixed(2)+"</b> and a stop-loss at <b>$"+ts.stopLoss.toFixed(2)+"</b>. The risk/reward ratio is <b>"+rrStr+":1</b> - "+(ts.rr>=2?"a favourable setup. For every $1 risked, the potential gain is $"+rrStr+".":ts.rr>=1?"acceptable, though a ratio above 2:1 is preferred. Use conservative position sizing.":"below the ideal threshold. Consider waiting for a better entry.");}
+  else if(ts.mode==="neutral"){p4="The direction is unclear. The setup shows a potential <b>breakout entry at $"+ts.entry.toFixed(2)+"</b> - but only act if price breaks above this with strong volume. If you currently hold, protect your position with a stop at <b>$"+ts.stopLoss.toFixed(2)+"</b>.";}
+  else{p4="The model forecasts a decline of approximately <b class='dn'>$"+ts.downsideRisk.toFixed(2)+"</b> from current price. <b>Do not add to this position.</b> If you currently hold, consider exiting at <b>$"+ts.stopLoss.toFixed(2)+"</b> to limit losses. Watch for a confirmed reversal above <b>$"+ts.entry.toFixed(2)+"</b> before considering re-entry.";}
+  var takeBull=["The overall picture looks <b class='up'>encouraging</b>. The trend is pointing upward, the model fits well, and the setup offers a reasonable risk/reward. Always consider your own risk tolerance.","The data suggests <b class='up'>positive momentum</b>. Use the technical levels as a guide - and always use your stop-loss.","If the bullish trend holds, "+ticker+" could deliver <b class='up'>solid returns</b> over the next three months. The stop-loss is there to protect you if things don't go as expected."];
+  var takeNeutral=["The model sees "+ticker+" moving roughly <b class='warn'>sideways</b>. Patience may be the best strategy - wait for a clearer directional signal.","With a <b class='warn'>neutral signal</b>, this might be a moment to observe rather than act. Keep it on your watchlist.","A sideways period may be a healthy pause. Check back when a stronger trend emerges."];
+  var takeBear=["The model flags a <b class='dn'>cautious outlook</b>. This doesn't mean the stock won't recover - it reflects recent downward momentum. Use the exit level as your guide.","Based on recent patterns, "+ticker+" faces some <b class='dn'>headwinds</b>. If you hold this stock, the stop-loss level shown above is worth taking seriously.","The trend for "+ticker+" is pointing <b class='dn'>downward</b>. Consider reducing exposure or waiting for the price to stabilise before making new investments."];
+  var p5=chg90>3?pick(takeBull):chg90>-3?pick(takeNeutral):pick(takeBear);
+  // Taleb / Spitznagel paragraph
+  var sfi = info.sfi || {lastSFI:50, kurt:null, skew:null, vov:null};
+  var itp = info.sfiInterp || {level:"UNKNOWN", talebs:"", spitz:"", skewNote:""};
+  var p_tail = "<b>Structural Fragility (Taleb / Spitznagel):</b> The Structural Fragility Index (SFI) for "
+    + ticker + " reads <b style=\"color:"+itp.color+"\">"+sfi.lastSFI.toFixed(1)+"</b> ("
+    + itp.level + "). " + itp.desc + " "
+    + (itp.skewNote ? '<span class=\"warn\">' + itp.skewNote + '</span> ' : "")
+    + "<br><br>"
+    + "<b>Taleb Lens:</b> " + itp.talebs + "<br>"
+    + "<b>Spitznagel Lens:</b> " + itp.spitz;
+
+  return[p1,p2,p3,p4,p5,p_tail];
+}
+
+// ── Yahoo Finance ─────────────────────────────────────────────────────────────
+async function fetchYahoo(ticker,range){
+  var ivl=(range==="5y"||range==="2y")?"1wk":"1d";
+  var url="https://query1.finance.yahoo.com/v8/finance/chart/"+ticker+"?interval="+ivl+"&range="+range+"&events=history";
+  var proxies=["https://corsproxy.io/?"+encodeURIComponent(url),"https://api.allorigins.win/raw?url="+encodeURIComponent(url)];
+  for(var i=0;i<proxies.length;i++){
+    try{
+      var res=await fetch(proxies[i]);if(!res.ok)continue;
+      var j=await res.json();
+      var r=j.chart&&j.chart.result&&j.chart.result[0];if(!r)continue;
+      var ts=r.timestamp,q=r.indicators.quote[0];
+      if(!ts||!q.close)continue;
+      var meta=r.meta||{};
+      var data=[];
+      for(var k=0;k<ts.length;k++){
+        if(q.close[k]==null)continue;
+        var d=new Date(ts[k]*1000);
+        data.push({
+          date:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"),
+          close:+q.close[k].toFixed(4),
+          volume:q.volume?q.volume[k]:0
+        });
+      }
+      if(data.length>=10)return{data:data,meta:meta};
+    }catch(e){}
+  }
+  throw new Error("Could not fetch \""+ticker+"\". Check the symbol and internet connection.");
+}
+
+// ── Canvas Chart (price + MAs + levels) ───────────────────────────────────────
+function drawPriceChart(labels,sets,forecastAt,entryP,stopP,tpP){
+  var wrap=document.getElementById("chartWrap");
+  var canvas=document.getElementById("chartCanvas");
+  var W=wrap.clientWidth-28,H=Math.max(260,Math.round(W*0.34));
+  canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;
+  canvas.style.width=W+"px";canvas.style.height=H+"px";
+  var ctx=canvas.getContext("2d");ctx.scale(devicePixelRatio,devicePixelRatio);
+  var pW=W-PAD.L-PAD.R,pH=H-PAD.T-PAD.B;
+  var allV=[];
+  sets.forEach(function(s){s.data.forEach(function(v){if(v!=null&&isFinite(v))allV.push(v);});});
+  if(entryP)allV.push(entryP);if(stopP)allV.push(stopP);if(tpP)allV.push(tpP);
+  if(!allV.length)return;
+  var mn=Math.min.apply(null,allV),mx=Math.max.apply(null,allV),pad=(mx-mn)*0.07||1;
+  mn-=pad;mx+=pad;var rng=mx-mn;var N=labels.length;
+  function xp(i){return PAD.L+(i/(N-1))*pW;}
+  function yp(v){return PAD.T+(1-(v-mn)/rng)*pH;}
+  ctx.fillStyle="#060c18";ctx.fillRect(0,0,W,H);
+  // forecast zone
+  if(forecastAt>0&&forecastAt<N){
+    var x0=xp(forecastAt);
+    var gz=ctx.createLinearGradient(x0,0,W-PAD.R,0);gz.addColorStop(0,"rgba(0,229,255,0.04)");gz.addColorStop(1,"rgba(0,229,255,0.09)");
+    ctx.fillStyle=gz;ctx.fillRect(x0,PAD.T,W-PAD.R-x0,pH);
+    ctx.strokeStyle="rgba(0,229,255,0.25)";ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(x0,PAD.T);ctx.lineTo(x0,PAD.T+pH);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle="rgba(0,229,255,0.45)";ctx.font="8px 'IBM Plex Mono',monospace";ctx.textAlign="left";ctx.textBaseline="top";
+    ctx.fillText("90-DAY FORECAST",x0+5,PAD.T+3);
+  }
+  // level lines
+  function drawLevel(price,color,label){
+    if(!price||!isFinite(price))return;
+    var y=yp(price);
+    ctx.save();ctx.beginPath();ctx.rect(PAD.L,PAD.T,pW,pH);ctx.clip();
+    ctx.strokeStyle=color;ctx.lineWidth=1;ctx.globalAlpha=0.5;ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.moveTo(PAD.L,y);ctx.lineTo(PAD.L+pW,y);ctx.stroke();
+    ctx.setLineDash([]);ctx.globalAlpha=1;
+    ctx.fillStyle=color;ctx.font="bold 8px 'IBM Plex Mono',monospace";
+    ctx.textAlign="right";ctx.textBaseline="middle";
+    ctx.fillText(label+" $"+price.toFixed(2),PAD.L-4,y);
+    ctx.restore();
+  }
+  drawLevel(tpP,"#4caf50","TP");
+  drawLevel(entryP,"#4fc3f7","ENTRY");
+  drawLevel(stopP,"#ef5350","STOP");
+  // grid
+  ctx.strokeStyle="#0e2236";ctx.lineWidth=1;
+  for(var t=0;t<=5;t++){var yy=PAD.T+(t/5)*pH;ctx.beginPath();ctx.moveTo(PAD.L,yy);ctx.lineTo(PAD.L+pW,yy);ctx.stroke();}
+  ctx.fillStyle="#2a5f8a";ctx.font="9px 'IBM Plex Mono',monospace";ctx.textAlign="right";ctx.textBaseline="middle";
+  for(var t=0;t<=5;t++)ctx.fillText("$"+(mx-(t/5)*rng).toFixed(0),PAD.L-6,PAD.T+(t/5)*pH);
+  ctx.textAlign="center";ctx.textBaseline="top";
+  var step=Math.ceil(N/9);
+  for(var i=0;i<N;i+=step)if(labels[i])ctx.fillText(labels[i],xp(i),PAD.T+pH+6);
+  // datasets
+  sets.forEach(function(s){
+    if(!s.data||!s.data.length)return;
+    ctx.save();ctx.beginPath();ctx.rect(PAD.L,PAD.T,pW,pH);ctx.clip();
+    ctx.strokeStyle=s.color;ctx.lineWidth=s.lw||1.5;ctx.setLineDash(s.dash||[]);
+    if(s.fill){
+      var seg=[];s.data.forEach(function(v,i){if(v!=null&&isFinite(v))seg.push(i);});
+      if(seg.length){var rgb=h2rgb(s.color);var grd=ctx.createLinearGradient(0,PAD.T,0,PAD.T+pH);grd.addColorStop(0,"rgba("+rgb+",0.16)");grd.addColorStop(1,"rgba("+rgb+",0.00)");ctx.beginPath();ctx.moveTo(xp(seg[0]),yp(s.data[seg[0]]));for(var i=1;i<seg.length;i++)ctx.lineTo(xp(seg[i]),yp(s.data[seg[i]]));ctx.lineTo(xp(seg[seg.length-1]),PAD.T+pH);ctx.lineTo(xp(seg[0]),PAD.T+pH);ctx.closePath();ctx.fillStyle=grd;ctx.fill();}
+    }
+    ctx.beginPath();var started=false;
+    for(var i=0;i<s.data.length;i++){if(s.data[i]==null||!isFinite(s.data[i])){started=false;continue;}if(!started){ctx.moveTo(xp(i),yp(s.data[i]));started=true;}else ctx.lineTo(xp(i),yp(s.data[i]));}
+    ctx.stroke();ctx.restore();
+  });
+  // axes
+  ctx.strokeStyle="#1a3a5c";ctx.lineWidth=1;ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(PAD.L,PAD.T);ctx.lineTo(PAD.L,PAD.T+pH);ctx.lineTo(PAD.L+pW,PAD.T+pH);ctx.stroke();
+  // tooltip
+  G.labels=labels;G.sets=sets;G.forecastAt=forecastAt;
+  var tt=document.getElementById("tt");
+  canvas.onmousemove=function(e){
+    var rect=canvas.getBoundingClientRect(),mx2=e.clientX-rect.left;
+    var idx=Math.round((mx2-PAD.L)/pW*(N-1));idx=Math.max(0,Math.min(N-1,idx));
+    document.getElementById("ttDate").textContent=(idx>=forecastAt?"FORECAST: ":"")+labels[idx];
+    var rows="";sets.forEach(function(s){var v=s.data[idx];if(v!=null&&isFinite(v))rows+='<div class="ttr" style="color:'+s.color+'">'+s.label+': <span style="color:#e0f0ff">$'+v.toFixed(2)+'</span></div>';});
+    // RSI in tooltip
+    if(G.rsiData&&G.rsiData[idx]!=null)rows+='<div class="ttr" style="color:#ce93d8">RSI: <span style="color:#e0f0ff">'+G.rsiData[idx].toFixed(1)+'</span></div>';
+    document.getElementById("ttRows").innerHTML=rows;
+    tt.style.left=((mx2+165>W)?mx2-175:mx2+12)+"px";tt.style.display="block";
+  };
+  canvas.onmouseleave=function(){tt.style.display="none";};
+}
+
+
+// ── SFI Sub-chart ──────────────────────────────────────────────────────────
+function drawSFIChart(labels, sfiData, forecastAt) {
+  var wrap   = document.getElementById("chartWrap");
+  var canvas = document.getElementById("sfiCanvas");
+  var W = wrap.clientWidth - 28, H = 70;
+  canvas.width  = W * devicePixelRatio; canvas.height = H * devicePixelRatio;
+  canvas.style.width = W + "px"; canvas.style.height = H + "px";
+  var ctx = canvas.getContext("2d"); ctx.scale(devicePixelRatio, devicePixelRatio);
+  var pW = W - RPAD.L - RPAD.R, pH = H - RPAD.T - RPAD.B;
+  var N = labels.length;
+  function xp(i) { return RPAD.L + (i / (N-1)) * pW; }
+  function yp(v) { return RPAD.T + (1 - v/100) * pH; }
+
+  ctx.fillStyle = "#060c18"; ctx.fillRect(0, 0, W, H);
+
+  // Forecast zone
+  if (forecastAt > 0 && forecastAt < N) {
+    var x0 = xp(forecastAt);
+    ctx.fillStyle = "rgba(0,229,255,0.04)";
+    ctx.fillRect(x0, RPAD.T, W - RPAD.R - x0, pH);
+  }
+
+  // Zone fills: 0-30 green, 30-60 amber, 60-80 red, 80-100 dark red
+  var zones = [
+    [0,   30,  "rgba(76,175,80,0.07)"],
+    [30,  60,  "rgba(255,152,0,0.05)"],
+    [60,  80,  "rgba(239,83,80,0.07)"],
+    [80,  100, "rgba(183,28,28,0.10)"],
+  ];
+  zones.forEach(function(z) {
+    ctx.fillStyle = z[2];
+    var y1 = yp(z[1]), y2 = yp(z[0]);
+    ctx.fillRect(RPAD.L, y1, pW, y2 - y1);
+  });
+
+  // Horizontal guides
+  function hline(val, label, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.globalAlpha = 0.4;
+    ctx.beginPath(); ctx.moveTo(RPAD.L, yp(val)); ctx.lineTo(RPAD.L + pW, yp(val)); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    ctx.fillStyle = color; ctx.font = "8px 'IBM Plex Mono',monospace";
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillText(label, RPAD.L - 4, yp(val));
+  }
+  hline(80, "80", "#b71c1c");
+  hline(60, "60", "#ef5350");
+  hline(50, "50", "#2a5f8a");
+  hline(30, "30", "#4caf50");
+
+  // SFI line — color-coded by zone
+  ctx.save(); ctx.beginPath(); ctx.rect(RPAD.L, RPAD.T, pW, pH); ctx.clip();
+  ctx.lineWidth = 1.8; ctx.setLineDash([]);
+  var started = false;
+  for (var i = 0; i < sfiData.length; i++) {
+    if (sfiData[i] == null || !isFinite(sfiData[i])) { started = false; continue; }
+    var sv = sfiData[i];
+    var col = sv >= 80 ? "#b71c1c" : sv >= 60 ? "#ef5350" : sv >= 30 ? "#ff9800" : "#4caf50";
+    ctx.strokeStyle = col;
+    if (!started) { ctx.beginPath(); ctx.moveTo(xp(i), yp(sv)); started = true; }
+    else { ctx.lineTo(xp(i), yp(sv)); ctx.stroke(); ctx.beginPath(); ctx.moveTo(xp(i), yp(sv)); }
+  }
+  ctx.restore();
+
+  // Zone labels on right
+  var zoneLabels = [[90,"#b71c1c","EXTREME"], [70,"#ef5350","FRAGILE"], [45,"#ff9800","RESILIENT"], [15,"#4caf50","ANTIFRAGILE"]];
+  ctx.font = "7px 'IBM Plex Mono',monospace"; ctx.textAlign = "left";
+  zoneLabels.forEach(function(z) {
+    ctx.fillStyle = z[1]; ctx.globalAlpha = 0.6;
+    ctx.fillText(z[2], RPAD.L + pW + 2, yp(z[0]));
+    ctx.globalAlpha = 1;
+  });
+
+  ctx.strokeStyle = "#1a3a5c"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(RPAD.L, RPAD.T); ctx.lineTo(RPAD.L, RPAD.T + pH); ctx.lineTo(RPAD.L + pW, RPAD.T + pH); ctx.stroke();
+}
+
+// ── RSI sub-chart ─────────────────────────────────────────────────────────────
+function drawRSIChart(labels,rsiData,forecastAt){
+  var wrap=document.getElementById("chartWrap");
+  var canvas=document.getElementById("rsiCanvas");
+  var W=wrap.clientWidth-28,H=80;
+  canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;
+  canvas.style.width=W+"px";canvas.style.height=H+"px";
+  var ctx=canvas.getContext("2d");ctx.scale(devicePixelRatio,devicePixelRatio);
+  var pW=W-RPAD.L-RPAD.R,pH=H-RPAD.T-RPAD.B;
+  var N=labels.length;
+  function xp(i){return RPAD.L+(i/(N-1))*pW;}
+  function yp(v){return RPAD.T+(1-v/100)*pH;}
+  ctx.fillStyle="#060c18";ctx.fillRect(0,0,W,H);
+  // forecast zone
+  if(forecastAt>0&&forecastAt<N){
+    var x0=xp(forecastAt);
+    ctx.fillStyle="rgba(0,229,255,0.04)";ctx.fillRect(x0,RPAD.T,W-RPAD.R-x0,pH);
+  }
+  // overbought / oversold zones
+  ctx.fillStyle="rgba(239,83,80,0.07)";ctx.fillRect(RPAD.L,RPAD.T,pW,pH*(1-70/100));
+  ctx.fillStyle="rgba(76,175,80,0.07)";ctx.fillRect(RPAD.L,RPAD.T+pH*(1-30/100),pW,pH*(30/100));
+  // lines at 70 and 30
+  function hline(val,color){
+    ctx.strokeStyle=color;ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.globalAlpha=0.4;
+    ctx.beginPath();ctx.moveTo(RPAD.L,yp(val));ctx.lineTo(RPAD.L+pW,yp(val));ctx.stroke();
+    ctx.setLineDash([]);ctx.globalAlpha=1;
+    ctx.fillStyle=color;ctx.font="8px 'IBM Plex Mono',monospace";ctx.textAlign="right";ctx.textBaseline="middle";
+    ctx.fillText(val,RPAD.L-4,yp(val));
+  }
+  hline(70,"#ef5350");hline(50,"#2a5f8a");hline(30,"#4caf50");
+  // Y label
+  ctx.fillStyle="#2a5f8a";ctx.font="9px 'IBM Plex Mono',monospace";ctx.textAlign="right";ctx.textBaseline="middle";
+  ctx.fillText("100",RPAD.L-4,yp(100));ctx.fillText("0",RPAD.L-4,yp(0));
+  // RSI line (color-coded by zone)
+  ctx.save();ctx.beginPath();ctx.rect(RPAD.L,RPAD.T,pW,pH);ctx.clip();
+  ctx.lineWidth=1.5;ctx.setLineDash([]);
+  var started=false;
+  for(var i=0;i<rsiData.length;i++){
+    if(rsiData[i]==null||!isFinite(rsiData[i])){started=false;continue;}
+    var col=rsiData[i]>70?"#ef5350":rsiData[i]<30?"#4caf50":"#ce93d8";
+    ctx.strokeStyle=col;
+    if(!started){ctx.beginPath();ctx.moveTo(xp(i),yp(rsiData[i]));started=true;}
+    else{ctx.lineTo(xp(i),yp(rsiData[i]));ctx.stroke();ctx.beginPath();ctx.moveTo(xp(i),yp(rsiData[i]));}
+  }
+  ctx.restore();
+  ctx.strokeStyle="#1a3a5c";ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(RPAD.L,RPAD.T);ctx.lineTo(RPAD.L,RPAD.T+pH);ctx.lineTo(RPAD.L+pW,RPAD.T+pH);ctx.stroke();
+}
+
+
+function hexToRgb(hex){
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return r+","+g+","+b;
+}
+
+function h2rgb(hex){return parseInt(hex.slice(1,3),16)+","+parseInt(hex.slice(3,5),16)+","+parseInt(hex.slice(5,7),16);}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function el(id){return document.getElementById(id);}
+function hide(id){el(id).style.display="none";}
+function showBlock(id){el(id).style.display="block";}
+function showFlex(id){el(id).style.display="flex";}
+function fp(v){return"$"+v.toFixed(2);}
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────
+async function go(){
+  var ticker=el("tickerIn").value.trim().toUpperCase();if(!ticker)return;
+  hide("errBox");hide("empty");
+  document.getElementById("tabNav").style.display="none";
+  showBlock("loader");
+  el("runBtn").disabled=true;el("runBtn").innerHTML="ANALYZING...";
+
+  try{
+    // 1. Fetch price + volume
+    var result=await fetchYahoo(ticker,period);
+    var parsed=result.data, meta=result.meta;
+    parsed.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+    var px=parsed.map(function(d){return d.close;});
+    var vol=parsed.map(function(d){return d.volume||0;});
+    var lbs=parsed.map(function(d){return d.date.slice(5);});
+    var n=px.length;
+
+    // 2. Company name from meta
+    var compName=meta.shortName||meta.longName||ticker;
+    var exchg=meta.exchangeName||meta.fullExchangeName||"";
+    var currency=meta.currency||"USD";
+    el("companyHeader").textContent=ticker+" - "+compName;
+    el("companyMeta").textContent=(exchg?exchg+" | ":"")+"Currency: "+currency+" | Period: "+period+" | "+n+" sessions";
+
+    // 3. Models + forecast
+    var models=runModels(px);var best=models[0];
+    var fc=forecast90(best,px);
+
+    // 4. Technicals
+    var rsi14=calcRSI(px,14);
+    var lastRSI=null;
+    for(var i=rsi14.length-1;i>=0;i--){if(rsi14[i]!=null){lastRSI=rsi14[i];break;}}
+    var vwap=calcVWAP(px,vol);
+    var ma20=calcSMA(px,20),ma50=calcSMA(px,50),ma100=calcSMA(px,100),ma200=calcSMA(px,200);
+    var lastMA20=ma20[n-1],lastMA50=ma50[n-1],lastMA100=ma100[n-1],lastMA200=ma200[n-1];
+    // 52-week from meta or calculate from available data
+    var wk52Hi=meta.fiftyTwoWeekHigh||Math.max.apply(null,px);
+    var wk52Lo=meta.fiftyTwoWeekLow||Math.min.apply(null,px);
+    var last=px[n-1];
+
+    // 5. Render technicals panel
+    el("wk52Lo").textContent=fp(wk52Lo);
+    el("wk52Hi").textContent=fp(wk52Hi);
+    el("techCurrentPrice").textContent=fp(last);
+    var wkRange=wk52Hi-wk52Lo;
+    var wkPos=wkRange>0?(last-wk52Lo)/wkRange*100:50;
+    el("wkBarFill").style.width="100%";
+    el("wkMarker").style.left=wkPos+"%";
+    el("wkPct").textContent="NOW: "+wkPos.toFixed(0)+"% of range";
+
+    // VWAP
+    if(vwap){
+      el("vwapVal").textContent=fp(vwap);
+      var vwapAbove=last>vwap;
+      el("vwapDesc").textContent=(vwapAbove?"Price ABOVE VWAP":"Price BELOW VWAP")+" by "+Math.abs(last-vwap).toFixed(2);
+      el("vwapChip").textContent=vwapAbove?"BULLISH":"BEARISH";
+      el("vwapChip").style.background=vwapAbove?"rgba(76,175,80,.15)":"rgba(239,83,80,.15)";
+      el("vwapChip").style.border="1px solid "+(vwapAbove?"#4caf50":"#ef5350");
+      el("vwapChip").style.color=vwapAbove?"#4caf50":"#ef5350";
+    } else {
+      el("vwapVal").textContent="N/A";el("vwapDesc").textContent="Volume data unavailable";
+    }
+
+    // RSI
+    if(lastRSI!==null){
+      el("rsiVal").textContent=lastRSI.toFixed(1);
+      var rsiColor=lastRSI>70?"#ef5350":lastRSI<30?"#4caf50":"#ce93d8";
+      el("rsiVal").style.color=rsiColor;
+      el("rsiZone").textContent=lastRSI>70?"OVERBOUGHT":lastRSI<30?"OVERSOLD":"NEUTRAL";
+      el("rsiZone").style.color=rsiColor;
+      el("rsiMarker").style.left=(lastRSI)+"%";
+    }
+
+    // MAs
+    var maConfigs=[
+      {label:"MA 20", val:lastMA20, color:"#ffd54f"},
+      {label:"MA 50", val:lastMA50, color:"#4fc3f7"},
+      {label:"MA 100",val:lastMA100,color:"#ff8a65"},
+      {label:"MA 200",val:lastMA200,color:"#ce93d8"},
+    ];
+    var maHTML=maConfigs.map(function(m){
+      if(m.val===null){
+        return'<div class="ma-pill na"><div class="ma-dot" style="background:#4a7a9b"></div><span class="ma-label">'+m.label+'</span><span class="ma-val" style="color:#4a7a9b">N/A</span><span class="ma-arrow" style="color:#4a7a9b">-</span></div>';
+      }
+      var above=last>m.val,cls=above?"above":"below",arrow=above?"&#8593;":"&#8595;",acolor=above?"#4caf50":"#ef5350";
+      return'<div class="ma-pill '+cls+'"><div class="ma-dot" style="background:'+m.color+'"></div><span class="ma-label">'+m.label+'</span><span class="ma-val" style="color:'+m.color+'">$'+m.val.toFixed(2)+'</span><span class="ma-arrow" style="color:'+acolor+'">'+arrow+'</span></div>';
+    }).join("");
+    el("maGrid").innerHTML=maHTML;
+
+    var today=parsed[n-1].date;
+    el("techDate").textContent="As of "+today;
+    // techPanel always visible in pane
+
+
+    // 6. Forecast data
+    var lastDate=new Date(parsed[n-1].date),fcLabels=[];
+    for(var i=0;i<fc.numPts;i++){var fd=new Date(lastDate);fd.setDate(fd.getDate()+(i+1)*3);fcLabels.push((fd.getMonth()+1)+"/"+fd.getDate());}
+    var allLabels=lbs.concat(fcLabels),forecastAt=n;
+    var priceData=px.slice().concat(new Array(fc.numPts).fill(null));
+    var modelData=best.model.pred.map(function(v){return+v.toFixed(2);}).concat(fc.fPts);
+    var hiData=new Array(n).fill(null).concat(fc.fHi);
+    var loData=new Array(n).fill(null).concat(fc.fLo);
+
+    // MA data for chart (historical only, no forecast extension)
+    var ma20chart=ma20.concat(new Array(fc.numPts).fill(null));
+    var ma50chart=ma50.concat(new Array(fc.numPts).fill(null));
+    var ma100chart=ma100.concat(new Array(fc.numPts).fill(null));
+    var ma200chart=ma200.concat(new Array(fc.numPts).fill(null));
+
+    // RSI extended
+    var rsiExtended=rsi14.concat(new Array(fc.numPts).fill(null));
+    G.rsiData=rsiExtended;
+
+    // 7. Pred banner
+    var rets=px.slice(1).map(function(p,i){return(p-px[i])/px[i];});
+    var volAnn=(Math.sqrt(rets.reduce(function(a,b){return a+b*b;},0)/rets.length)*Math.sqrt(252)*100);
+    var pchg=((px[n-1]/px[0]-1)*100),ppos=pchg>=0;
+    var chg90=((fc.target-last)/last*100),up=chg90>=0;
+    el("pPrice").textContent=fp(fc.target);el("pPrice").style.color=up?"#4caf50":"#ef5350";
+    el("pDelta").textContent=(up?"+":"")+chg90.toFixed(2)+"% vs today | 90-day target";
+    el("pHi").textContent=fp(fc.hi);el("pLo").textContent=fp(fc.lo);
+    el("pModel").textContent=best.name;el("pR2").textContent="R\u00B2 = "+best.r2.toFixed(4);
+    var confEl=el("pConf"),confLabel;
+    if(best.r2>0.80){confEl.textContent="HIGH CONFIDENCE";confEl.className="conf-chip conf-hi";confLabel="High";}
+    else if(best.r2>0.50){confEl.textContent="MEDIUM CONFIDENCE";confEl.className="conf-chip conf-md";confLabel="Medium";}
+    else{confEl.textContent="LOW CONFIDENCE";confEl.className="conf-chip conf-lo";confLabel="Low";}
+    var sigEl=el("pSignal"),sdEl=el("pSignalDesc"),sigLabel;
+    if(chg90>8){sigEl.innerHTML='<span style="color:#4caf50">BULLISH &#8593;</span>';sdEl.textContent="Strong upward trajectory";sigLabel="Strongly Bullish";}
+    else if(chg90>2){sigEl.innerHTML='<span style="color:#81c784">BULLISH &#8593;</span>';sdEl.textContent="Moderate upward trend";sigLabel="Moderately Bullish";}
+    else if(chg90>-2){sigEl.innerHTML='<span style="color:#ff9800">NEUTRAL &#8594;</span>';sdEl.textContent="Sideways movement expected";sigLabel="Neutral";}
+    else if(chg90>-8){sigEl.innerHTML='<span style="color:#e57373">BEARISH &#8595;</span>';sdEl.textContent="Moderate downward trend";sigLabel="Moderately Bearish";}
+    else{sigEl.innerHTML='<span style="color:#ef5350">BEARISH &#8595;</span>';sdEl.textContent="Strong downward trajectory";sigLabel="Strongly Bearish";}
+    // predBanner always visible in pane
+
+    // 5b. Structural Fragility Index (Taleb / Spitznagel)
+    var sfiResult = computeSFI(px);
+    var interp    = interpretSFI(sfiResult.lastSFI, sfiResult.kurt, sfiResult.skew, sfiResult.vov, chg90);
+
+    el("sfiVal").textContent = sfiResult.lastSFI.toFixed(1);
+    el("sfiVal").style.color = interp.color;
+    el("sfiChip").textContent = interp.chip;
+    el("sfiChip").style.background = "rgba("+hexToRgb(interp.color)+",0.12)";
+    el("sfiChip").style.border  = "1px solid " + interp.color;
+    el("sfiChip").style.color   = interp.color;
+    el("sfiMarker").style.left  = sfiResult.lastSFI + "%";
+
+    // Metric rows
+    el("kurtVal").textContent  = sfiResult.kurt  != null ? sfiResult.kurt.toFixed(3)  : "N/A";
+    el("kurtVal").style.color  = sfiResult.kurt  != null && sfiResult.kurt  > 3 ? "#ef5350" : sfiResult.kurt != null && sfiResult.kurt < 0 ? "#4caf50" : "#e0f4ff";
+    el("skewVal").textContent  = sfiResult.skew  != null ? sfiResult.skew.toFixed(3)  : "N/A";
+    el("skewVal").style.color  = sfiResult.skew  != null && sfiResult.skew  < -0.5 ? "#ef5350" : sfiResult.skew != null && sfiResult.skew > 0.5 ? "#4caf50" : "#ff9800";
+    el("vovVal").textContent   = sfiResult.vov   != null ? (sfiResult.vov * 100).toFixed(3)+"%" : "N/A";
+    el("vovVal").style.color   = sfiResult.vov   != null && sfiResult.vov > 0.005 ? "#ef5350" : "#e0f4ff";
+    el("tailSignal").textContent = interp.level;
+    el("tailSignal").style.color = interp.color;
+
+    // Adjust forecast banner: add fragility modifier note
+    var fragNote = sfiResult.lastSFI > 60
+      ? ' <span style="color:#ef5350;font-size:9px;letter-spacing:1px">&#9888; High fragility detected — widen your mental confidence band</span>'
+      : sfiResult.lastSFI < 30
+      ? ' <span style="color:#4caf50;font-size:9px;letter-spacing:1px">&#10003; Low fragility — model confidence is higher</span>'
+      : '';
+    if (fragNote && el("pDelta")) el("pDelta").innerHTML = el("pDelta").textContent + fragNote;
+
+
+    // 8. Trade Setup
+    try {
+    var ts=calcTradeSetup(px,fc,period,chg90,last,best.r2);
+    el("tradeperiodLabel").textContent=period.toUpperCase();
+    var badge=el("tradeBadge");
+    if(ts.mode==="bull"){badge.textContent="\u25B2 BUY SETUP";badge.className="trade-badge badge-buy";}
+    else if(ts.mode==="neutral"){badge.textContent="\u2194 WAIT / WATCH";badge.className="trade-badge badge-wait";}
+    else{badge.textContent="\u26D4 DO NOT BUY";badge.className="trade-badge badge-sell";}
+    if(ts.mode==="bull"){el("entryColLabel").textContent="Ideal Entry Zone";el("tpColLabel").textContent="Take Profit Target";el("stopColLabel").textContent="Stop Loss";el("exitColLabel").textContent="Early Exit Warning";el("entryTag").textContent="BUY ENTRY";el("entryTag").className="ees-tag tag-entry";el("tpTag").textContent="TAKE PROFIT";el("tpTag").className="ees-tag tag-target";el("stopTag").textContent="STOP LOSS";el("stopTag").className="ees-tag tag-stop";el("exitTag").textContent="EXIT SIGNAL";el("exitTag").className="ees-tag tag-exit";}
+    else if(ts.mode==="neutral"){el("entryColLabel").textContent="Breakout Entry Level";el("tpColLabel").textContent="Target if Breakout";el("stopColLabel").textContent="Protect Holdings";el("exitColLabel").textContent="Support Watch Level";el("entryTag").textContent="BREAKOUT ENTRY";el("entryTag").className="ees-tag tag-entry";el("tpTag").textContent="BREAKOUT TARGET";el("tpTag").className="ees-tag tag-target";el("stopTag").textContent="PROTECT HOLDINGS";el("stopTag").className="ees-tag tag-stop";el("exitTag").textContent="WATCH LEVEL";el("exitTag").className="ees-tag tag-exit";}
+    else{el("entryColLabel").textContent="Re-Entry Level (Future)";el("tpColLabel").textContent="Recovery Target";el("stopColLabel").textContent="Exit Now If Holding";el("exitColLabel").textContent="Early Warning Level";el("entryTag").textContent="RE-ENTRY LATER";el("entryTag").className="ees-tag tag-entry";el("tpTag").textContent="RECOVERY TARGET";el("tpTag").className="ees-tag tag-target";el("stopTag").textContent="EXIT IF HOLDING";el("stopTag").className="ees-tag tag-stop";el("exitTag").textContent="EARLY WARNING";el("exitTag").className="ees-tag tag-exit";}
+    el("entryPrice").textContent=fp(ts.entry);el("entrySub").textContent=ts.entrySub;
+    el("targetPrice").textContent=fp(ts.takeProfit);el("targetSub").textContent=ts.tpSub;
+    el("stopPrice").textContent=fp(ts.stopLoss);el("stopSub").textContent=ts.slSub;
+    el("exitPrice").textContent=fp(ts.exitSignal);el("exitSub").textContent=ts.exitSub;
+    if(ts.mode==="bear"){el("rrRatio").textContent="N/A - Bearish";el("rrRewardBar").style.width="25%";el("rrRiskBar").style.width="75%";el("rrNote").innerHTML='<span style="color:#ef5350">Do not open new positions</span>';}
+    else if(ts.mode==="neutral"){el("rrRatio").textContent="1 : "+(ts.rr>0?ts.rr.toFixed(2):"TBD");el("rrRewardBar").style.width="50%";el("rrRiskBar").style.width="50%";el("rrNote").innerHTML='<span style="color:#ff9800">Only valid if breakout occurs</span>';}
+    else{el("rrRatio").textContent="1 : "+ts.rr.toFixed(2);el("rrRewardBar").style.width=ts.rewardPct+"%";el("rrRiskBar").style.width=ts.riskPct+"%";var rrc=ts.rr>=2?"color:#4caf50":ts.rr>=1?"color:#ff9800":"color:#ef5350";el("rrNote").innerHTML='<span style="'+rrc+'">'+(ts.rr>=2?"Excellent setup":ts.rr>=1?"Acceptable setup":"Consider waiting for better entry")+'</span>';}
+    var pLabel={"3mo":"3-month","6mo":"6-month","1y":"12-month","2y":"2-year","5y":"5-year"}[period]||period;
+    var lvRows;
+    if(ts.mode==="bull"){lvRows=[{icon:"\uD83D\uDFE6",html:"<b>Buy Entry at "+fp(ts.entry)+"</b> - "+ts.entryNote+". Based on "+pLabel+" support level and ATR (= "+fp(ts.atr)+")"},{icon:"\uD83D\uDFE9",html:"<b>Take Profit at "+fp(ts.takeProfit)+"</b> - "+ts.tpSub+". Potential gain of <span class='up'>+"+((ts.takeProfit-ts.entry)/ts.entry*100).toFixed(1)+"%</span> from entry."},{icon:"\uD83D\uDFE5",html:"<b>Stop Loss at "+fp(ts.stopLoss)+"</b> - "+ts.slSub+". Limits downside to <span class='dn'>-"+((ts.entry-ts.stopLoss)/ts.entry*100).toFixed(1)+"%</span> from entry."},{icon:"\u26A0\uFE0F",html:"<b>Early Exit at "+fp(ts.exitSignal)+"</b> - "+ts.exitSub+"."},{icon:"\u2696\uFE0F",html:"<b>Risk/Reward = "+ts.rr.toFixed(2)+":1</b> - for every $1 risked, potential gain is $"+ts.rr.toFixed(2)+". "+(ts.rr>=2?"Strong setup.":ts.rr>=1?"Acceptable. Use conservative sizing.":"Consider waiting for a better entry.")}];}
+    else if(ts.mode==="neutral"){lvRows=[{icon:"\u23F3",html:"<b>Do not buy yet</b> - trend is unclear. Patience is the strategy."},{icon:"\uD83D\uDFE6",html:"<b>Breakout Entry at "+fp(ts.entry)+"</b> - "+ts.entryNote+"."},{icon:"\uD83D\uDFE9",html:"<b>Breakout Target: "+fp(ts.takeProfit)+"</b> - "+ts.tpSub+"."},{icon:"\uD83D\uDFE5",html:"<b>If you hold: protect at "+fp(ts.stopLoss)+"</b> - "+ts.slSub+"."},{icon:"\uD83D\uDC41\uFE0F",html:"<b>Watch "+fp(ts.exitSignal)+"</b> - "+ts.exitSub+"."}];}
+    else{lvRows=[{icon:"\u26D4",html:"<b>DO NOT BUY</b> - model forecasts further decline of approx. <span class='dn'>$"+ts.downsideRisk.toFixed(2)+"</span>. Wait for confirmed reversal."},{icon:"\uD83D\uDFE5",html:"<b>If you HOLD: Exit at "+fp(ts.stopLoss)+"</b> - "+ts.slSub+"."},{icon:"\u26A0\uFE0F",html:"<b>Early Warning at "+fp(ts.exitSignal)+"</b> - "+ts.exitSub+"."},{icon:"\uD83D\uDFEA",html:"<b>Future Re-Entry: "+fp(ts.entry)+"</b> - "+ts.entryNote+"."},{icon:"\uD83D\uDFE9",html:"<b>Recovery Target: "+fp(ts.takeProfit)+"</b> - "+ts.tpSub+"."}];}
+    el("levelRows").innerHTML=lvRows.map(function(r){return'<div class="level-row"><div class="level-icon">'+r.icon+'</div><div class="level-text">'+r.html+'</div></div>';}).join("");
+    // ── Options Play (section 8b) ──────────────────────────────────────
+    try {
+      var opt = calcOptions(last, ts, fc, period, chg90);
+      renderOptions(opt, last);
+    } catch(eOpt) {
+      console.error('Options engine error:', eOpt);
+      var ob = el('optStratDesc');
+      if(ob) ob.innerHTML = '<span style="color:#ef5350">Options error: ' + eOpt.message + '</span>';
+    }
+    // tradeCard section complete
+    } catch(e8){ el("levelRows").innerHTML='<div style="color:#ef5350;padding:16px;font-size:13px">Trade Setup Error: '+e8.message+'<br>Please report this.</div>'; console.error("Section 8:",e8); }
+
+    // 9. Commentary
+    try {
+    var paras=generateCommentary({ticker:ticker,last:last,target:fc.target,chg90:chg90,pchg:pchg,hi:fc.hi,lo:fc.lo,modelName:best.name,r2:best.r2,annVol:fc.annVol,conf:confLabel,signal:sigLabel,period:period,n:n,tradeSetup:ts,rsi:lastRSI, sfi:sfiResult, sfiInterp:interp});
+    el("commBody").innerHTML=paras.map(function(p,i){return'<div class="comm-para">'+p+'</div>'+(i<paras.length-1?'<div class="comm-divider"></div>':'');}).join("");
+    // commentary section complete
+    } catch(e9){ el("commBody").innerHTML='<div style="color:#ef5350;padding:16px;font-size:13px">Commentary Error: '+e9.message+'</div>'; console.error("Section 9:",e9); }
+
+    // 10. Model race
+    var maxR2=models[0].r2||0.0001;
+    el("raceRows").innerHTML=models.map(function(m,i){var pct=Math.max(2,Math.min(100,(m.r2/maxR2)*100)),col=m.r2>0.85?"#4caf50":m.r2>0.55?"#ff9800":"#ef5350";return'<div class="race-row'+(i===0?" win":"")+'"><div class="rn">'+(i===0?'<span style="color:#00e5ff">&#9654;</span> ':'')+m.name+'</div><div class="rb"><div class="rbar" style="width:'+pct+'%;background:'+col+'"></div></div><div class="rv" style="color:'+col+'">'+m.r2.toFixed(4)+'</div>'+(i===0?'<span class="rbadge">BEST FIT</span>':'')+
+      '</div>';}).join("");
+    // modelRace always visible in pane
+
+    // 11. Stats bar
+    var cells=[["TICKER",ticker+" - "+compName.slice(0,18),"#4fc3f7"],["LAST",fp(last),"#e0f4ff"],["CHANGE",(ppos?"+":"")+pchg.toFixed(2)+"%",ppos?"#4caf50":"#ef5350"],["52W HIGH",fp(wk52Hi),"#4caf50"],["52W LOW",fp(wk52Lo),"#ef5350"],["RSI(14)",lastRSI?lastRSI.toFixed(1):"N/A",lastRSI>70?"#ef5350":lastRSI<30?"#4caf50":"#ce93d8"],["ANN.VOL",volAnn.toFixed(1)+"%","#ff9800"],["PERIOD",period,"#8fb8d8"]];
+    el("statsBar").innerHTML=cells.map(function(c){return'<div class="sc"><div class="lbl">'+c[0]+'</div><div class="sv" style="color:'+c[2]+'">'+c[1]+'</div></div>';}).join("");
+    // statsBar always visible in pane
+
+    // 12. Chart
+    var sets=[
+      {label:"Price",         data:priceData, color:"#4fc3f7",lw:1.5,fill:true},
+      {label:best.name,       data:modelData, color:"#ff6f00",lw:2,  dash:[6,3]},
+      {label:"CI Upper (90%)",data:hiData,    color:"#4caf50",lw:1,  dash:[3,3]},
+      {label:"CI Lower (90%)",data:loData,    color:"#ef5350",lw:1,  dash:[3,3]},
+      {label:"MA20",          data:ma20chart, color:"#ffd54f",lw:1,  dash:[]},
+      {label:"MA50",          data:ma50chart, color:"#4fc3f7",lw:1,  dash:[2,2]},
+      {label:"MA100",         data:ma100chart,color:"#ff8a65",lw:1,  dash:[2,2]},
+      {label:"MA200",         data:ma200chart,color:"#ce93d8",lw:1.5,dash:[4,2]},
+    ];
+    el("chartTitle").textContent=ticker+" - "+compName+" | "+best.name+" | 90-Day Forecast | "+n+" sessions";
+    // chartWrap always visible in pane
+    setTimeout(function(){
+      drawPriceChart(allLabels,sets,forecastAt,ts.entry,ts.stopLoss,ts.takeProfit);
+      drawRSIChart(allLabels,rsiExtended,forecastAt);
+      G.sfiData = sfiResult.sfi.concat(new Array(fc.numPts).fill(null));
+      drawSFIChart(allLabels,G.sfiData,forecastAt);
+    },30);
+
+    // ── Reveal tabs & update badges ──────────────────────────
+    document.getElementById('tabNav').style.display = 'block';
+    document.getElementById('empty').style.display  = 'none';
+    switchTab('overview');
+    updateBadges(sigLabel||'Neutral', best.name, lastRSI, ts.mode, sfiResult.lastSFI);
+
+    el("chartLegend").innerHTML=sets.map(function(s){var st=s.dash&&s.dash.length?"border-top:2px dashed "+s.color+";":"background:"+s.color+";";return'<div class="li"><div class="ld" style="'+st+'"></div>'+s.label+'</div>';}).join("")
+      +'<div class="li"><div class="ld" style="background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.3);height:8px;width:18px;border-radius:2px"></div>Forecast Zone</div>'+'<div class="li"><div class="ld" style="background:linear-gradient(90deg,#4caf50,#ff9800,#ef5350);height:2px;"></div>SFI (Fragility)</div>';
+
+  }catch(e){
+    el("errBox").innerHTML="\u26A0 "+e.message;showBlock("errBox");showBlock("empty");document.getElementById("tabNav").style.display="none";
+  }finally{
+    hide("loader");el("runBtn").disabled=false;el("runBtn").innerHTML="&#9658;&nbsp; ANALYZE &amp; PREDICT";
+  }
+}
+window.addEventListener("resize",function(){if(G.labels.length&&G.sets.length){drawPriceChart(G.labels,G.sets,G.forecastAt);drawRSIChart(G.labels,G.rsiData,G.forecastAt);if(G.sfiData)drawSFIChart(G.labels,G.sfiData,G.forecastAt);}});
+
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// OPTIONS PLAY ENGINE
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Standard normal CDF (Abramowitz & Stegun approximation) ─────────────────
+function normalCDF(x) {
+  var t = 1 / (1 + 0.2316419 * Math.abs(x));
+  var d = 0.3989423 * Math.exp(-x * x / 2);
+  var p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.7814779 + t * (-1.8212560 + t * 1.3302744))));
+  return x > 0 ? 1 - p : p;
+}
+
+// ── Black-Scholes pricer ─────────────────────────────────────────────────────
+function blackScholes(S, K, T, r, sigma, type) {
+  if (T <= 0) return Math.max(0, type === 'call' ? S - K : K - S);
+  var d1 = (Math.log(S / K) + (r + sigma * sigma / 2) * T) / (sigma * Math.sqrt(T));
+  var d2 = d1 - sigma * Math.sqrt(T);
+  if (type === 'call') {
+    return S * normalCDF(d1) - K * Math.exp(-r * T) * normalCDF(d2);
+  } else {
+    return K * Math.exp(-r * T) * normalCDF(-d2) - S * normalCDF(-d1);
+  }
+}
+
+// ── Delta ────────────────────────────────────────────────────────────────────
+function bsDelta(S, K, T, r, sigma, type) {
+  if (T <= 0) return type === 'call' ? (S > K ? 1 : 0) : (S < K ? -1 : 0);
+  var d1 = (Math.log(S / K) + (r + sigma * sigma / 2) * T) / (sigma * Math.sqrt(T));
+  return type === 'call' ? normalCDF(d1) : normalCDF(d1) - 1;
+}
+
+// ── Round to nearest standard option strike ──────────────────────────────────
+function nearestStrike(price) {
+  var inc = price < 10 ? 0.5 : price < 25 ? 1 : price < 50 ? 2.5 : price < 100 ? 5 : price < 200 ? 5 : 10;
+  return Math.round(price / inc) * inc;
+}
+
+function strikesAround(price, n) {
+  // returns n strikes below and n strikes above
+  var atm = nearestStrike(price);
+  var inc = price < 10 ? 0.5 : price < 25 ? 1 : price < 50 ? 2.5 : price < 100 ? 5 : price < 200 ? 5 : 10;
+  var strikes = [];
+  for (var i = -n; i <= n; i++) {
+    strikes.push(Math.round((atm + i * inc) * 100) / 100);
+  }
+  return strikes.filter(function(s) { return s > 0; });
+}
+
+// ── DTE recommendation based on period and mode ──────────────────────────────
+function recommendedDTE(period, mode) {
+  var map = { '3mo': [30, 45], '6mo': [45, 60], '1y': [60, 90], '2y': [90, 120], '5y': [120, 180] };
+  var range = map[period] || [45, 60];
+  return { min: range[0], max: range[1], mid: Math.round((range[0] + range[1]) / 2) };
+}
+
+// ── Main options calculator ───────────────────────────────────────────────────
+function calcOptions(last, ts, fc, period, chg90) {
+  var S     = last;
+  var sigma = (fc.annVol || 25) / 100;  // use hist vol as IV proxy
+  var r     = 0.05;                      // risk-free rate
+  var dte   = recommendedDTE(period, ts.mode);
+  var T     = dte.mid / 365;
+
+  var result = {};
+
+  if (ts.mode === 'bull') {
+    // ── LONG CALL ─────────────────────────────────────────────────────────
+    // Primary: ATM strike (best balance of cost & leverage)
+    // Alt: OTM strike at entry price (cheaper, more leverage)
+    var atmStrike = nearestStrike(S);
+    var otmStrike = nearestStrike(ts.entry);  // entry zone is often slightly below
+    if (otmStrike >= S) otmStrike = atmStrike; // prevent being ITM framed as OTM
+
+    var atmPremium = blackScholes(S, atmStrike, T, r, sigma, 'call');
+    var atmDelta   = bsDelta(S, atmStrike, T, r, sigma, 'call');
+
+    // Profit at target
+    var intrinsicAtTarget = Math.max(0, fc.target - atmStrike);
+    var timeValueAtTarget = blackScholes(fc.target, atmStrike, T * 0.5, r, sigma, 'call'); // rough mid-expiry estimate
+    var profitPerShare    = Math.max(intrinsicAtTarget, timeValueAtTarget) - atmPremium;
+
+    result = {
+      type: 'call',
+      strategy: 'LONG CALL',
+      stratColor: '#4caf50',
+      stratBg: 'rgba(76,175,80,.15)',
+      stratBorder: 'rgba(76,175,80,.4)',
+      desc: 'The model forecasts a <b>bullish move of +' + chg90.toFixed(1) + '%</b> over 90 days. A <b>Long Call</b> gives you leveraged upside exposure with risk limited to the premium paid. The ATM strike offers the best delta for capturing the move if the forecast is correct.',
+      strike:   atmStrike,
+      strikeSub: (atmStrike === S ? 'At-the-money (ATM) — max delta, moderate cost' :
+                 atmStrike < S  ? 'In-the-money (ITM) — higher cost, safer delta'  :
+                                  'Out-of-the-money (OTM) — lower cost, needs more move'),
+      strikeTag: atmStrike < S ? 'ITM' : atmStrike === S ? 'ATM' : 'OTM',
+      strikeTagColor: atmStrike < S ? '#ff9800' : atmStrike === S ? '#4fc3f7' : '#ce93d8',
+      dte: dte.mid, dteSub: dte.min + '–' + dte.max + ' DTE window recommended',
+      premium: atmPremium,
+      premiumSub: 'Per share · ×100 = $' + (atmPremium * 100).toFixed(0) + ' per contract',
+      breakeven: atmStrike + atmPremium,
+      beDir: 'up',
+      delta: atmDelta,
+      maxProfit: profitPerShare > 0 ? '$' + (profitPerShare * 100).toFixed(0) + ' if target hit' : 'Unlimited upside',
+      maxLoss: '$' + (atmPremium * 100).toFixed(0) + ' (1 contract)',
+      levels: [
+        { icon: '🟦', text: '<b>Enter if price is near $' + ts.entry.toFixed(2) + '</b> (trade setup entry zone). Confirms the stock is at a good level before paying premium.' },
+        { icon: '🟩', text: '<b>Profit target: $' + ts.takeProfit.toFixed(2) + '</b> stock price. At this level, the call gains intrinsic value rapidly. Consider selling the call here.' },
+        { icon: '🟥', text: '<b>Stop on the option</b> if stock falls below $' + ts.stopLoss.toFixed(2) + ' (trade stop). The call will lose significant delta — cut losses at ~40-50% premium loss.' },
+        { icon: '⚠️', text: '<b>Breakeven at expiry: $' + (atmStrike + atmPremium).toFixed(2) + '</b>. Stock must exceed this for profit. Current price is $' + S.toFixed(2) + ' — needs ' + ((atmStrike + atmPremium - S) / S * 100).toFixed(1) + '% move.' }
+      ],
+      altStrike: otmStrike !== atmStrike ? otmStrike : nearestStrike(S * 1.05),
+      allStrikes: strikesAround(S, 3)
+    };
+
+  } else if (ts.mode === 'bear') {
+    // ── LONG PUT ──────────────────────────────────────────────────────────
+    var atmStrikeP = nearestStrike(S);
+    var atmPremiumP = blackScholes(S, atmStrikeP, T, r, sigma, 'put');
+    var atmDeltaP   = bsDelta(S, atmStrikeP, T, r, sigma, 'put');
+    var intrinsicAtStop = Math.max(0, atmStrikeP - fc.target);
+    var profitPS = intrinsicAtStop - atmPremiumP;
+
+    result = {
+      type: 'put',
+      strategy: 'LONG PUT',
+      stratColor: '#ef5350',
+      stratBg: 'rgba(239,83,80,.15)',
+      stratBorder: 'rgba(239,83,80,.4)',
+      desc: 'The model forecasts a <b>bearish decline of ' + chg90.toFixed(1) + '%</b> over 90 days. A <b>Long Put</b> profits as the stock falls, with risk limited to the premium paid. This is a protective or directional bearish play — do NOT buy the stock.',
+      strike:   atmStrikeP,
+      strikeSub: 'At-the-money (ATM) — captures downside from current price',
+      strikeTag: 'ATM',
+      strikeTagColor: '#ef5350',
+      dte: dte.mid, dteSub: dte.min + '–' + dte.max + ' DTE window recommended',
+      premium: atmPremiumP,
+      premiumSub: 'Per share · ×100 = $' + (atmPremiumP * 100).toFixed(0) + ' per contract',
+      breakeven: atmStrikeP - atmPremiumP,
+      beDir: 'down',
+      delta: atmDeltaP,
+      maxProfit: profitPS > 0 ? '$' + (profitPS * 100).toFixed(0) + ' if target hit' : '$' + (atmStrikeP * 100).toFixed(0) + ' max (stock → 0)',
+      maxLoss: '$' + (atmPremiumP * 100).toFixed(0) + ' (1 contract)',
+      levels: [
+        { icon: '🟥', text: '<b>Bearish entry — buy ATM put at $' + atmStrikeP.toFixed(2) + ' strike</b>. Profits accelerate if stock breaks below key support at $' + ts.stopLoss.toFixed(2) + '.' },
+        { icon: '🟩', text: '<b>Profit target: $' + fc.target.toFixed(2) + '</b> stock price. At model target, the put gains substantial intrinsic value. Consider selling here.' },
+        { icon: '🟦', text: '<b>Cut losses</b> if stock rallies above $' + (S * 1.05).toFixed(2) + ' (+5% from here). Bearish thesis is wrong — exit the put to salvage remaining premium.' },
+        { icon: '⚠️', text: '<b>Breakeven at expiry: $' + (atmStrikeP - atmPremiumP).toFixed(2) + '</b>. Stock must fall below this for profit. Needs ' + ((S - (atmStrikeP - atmPremiumP)) / S * 100).toFixed(1) + '% decline.' }
+      ],
+      altStrike: nearestStrike(ts.exitSignal),
+      allStrikes: strikesAround(S, 3)
+    };
+
+  } else {
+    // ── NEUTRAL: LONG STRADDLE ─────────────────────────────────────────────
+    var atmS2   = nearestStrike(S);
+    var callPrem = blackScholes(S, atmS2, T, r, sigma, 'call');
+    var putPrem  = blackScholes(S, atmS2, T, r, sigma, 'put');
+    var totalPrem = callPrem + putPrem;
+    var callDeltaN = bsDelta(S, atmS2, T, r, sigma, 'call');
+
+    result = {
+      type: 'straddle',
+      strategy: 'LONG STRADDLE',
+      stratColor: '#ff9800',
+      stratBg: 'rgba(255,152,0,.15)',
+      stratBorder: 'rgba(255,152,0,.4)',
+      desc: 'The model sees <b>no clear directional edge</b> — the stock could break either way. A <b>Long Straddle</b> (buy both ATM call + ATM put) profits from a big move in either direction. You need a significant price swing to cover both premiums.',
+      strike: atmS2,
+      strikeSub: 'ATM for both call AND put — profits from any large move',
+      strikeTag: 'STRADDLE',
+      strikeTagColor: '#ff9800',
+      dte: dte.mid, dteSub: dte.min + '–' + dte.max + ' DTE — allow time for the move',
+      premium: totalPrem,
+      premiumSub: 'Call $' + callPrem.toFixed(2) + ' + Put $' + putPrem.toFixed(2) + ' · ×100 = $' + (totalPrem * 100).toFixed(0),
+      breakeven: atmS2 + totalPrem,
+      beDir: 'both',
+      delta: callDeltaN,
+      maxProfit: 'Unlimited (call side) / $' + (atmS2 * 100).toFixed(0) + ' max (put side)',
+      maxLoss: '$' + (totalPrem * 100).toFixed(0) + ' if stock pins at $' + atmS2.toFixed(2),
+      levels: [
+        { icon: '🟦', text: '<b>Upper breakeven: $' + (atmS2 + totalPrem).toFixed(2) + '</b> (strike + total premium). Stock needs to close ABOVE this for profit on call side.' },
+        { icon: '🟦', text: '<b>Lower breakeven: $' + (atmS2 - totalPrem).toFixed(2) + '</b> (strike - total premium). Stock needs to close BELOW this for profit on put side.' },
+        { icon: '🟥', text: '<b>Max loss zone: $' + (atmS2 - totalPrem * 0.5).toFixed(2) + ' – $' + (atmS2 + totalPrem * 0.5).toFixed(2) + '</b>. If stock stays near ATM, both options decay and you lose premium.' },
+        { icon: '⚠️', text: '<b>Catalysts to watch</b> — straddles work best around earnings, product launches, or macro events. Without a catalyst, time decay (theta) erodes both options daily.' }
+      ],
+      altStrike: nearestStrike(ts.resistance || S * 1.05),
+      allStrikes: strikesAround(S, 3)
+    };
+  }
+
+  return result;
+}
+
+// ── Render options tab ────────────────────────────────────────────────────────
+function renderOptions(opt, last) {
+  // Strategy badge
+  var sb = el('optStratBadge');
+  sb.textContent = opt.strategy;
+  sb.style.background = opt.stratBg;
+  sb.style.border = '1px solid ' + opt.stratBorder;
+  sb.style.color  = opt.stratColor;
+
+  el('optStratDesc').innerHTML = opt.desc;
+  el('optPrimaryTitle').textContent = opt.strategy + ' — Recommended Setup';
+
+  // Strike
+  el('optStrike1').textContent = '$' + opt.strike.toFixed(2);
+  el('optStrike1').style.color = opt.stratColor;
+  el('optStrike1Sub').textContent = opt.strikeSub;
+  var st = el('optStrike1Tag');
+  st.textContent = opt.strikeTag;
+  st.style.background = 'rgba(0,0,0,.3)';
+  st.style.border = '1px solid ' + opt.strikeTagColor;
+  st.style.color  = opt.strikeTagColor;
+
+  // DTE
+  el('optDTE').textContent = opt.dte + ' DTE';
+  el('optDTESub').textContent = opt.dteSub;
+
+  // Premium
+  el('optPremium').textContent = '$' + opt.premium.toFixed(2);
+  el('optPremiumSub').textContent = opt.premiumSub;
+
+  // Breakeven
+  el('optBE').textContent = '$' + opt.breakeven.toFixed(2);
+  el('optBE').style.color = opt.type === 'put' ? '#ef5350' : '#4caf50';
+  el('optBESub').textContent = opt.beDir === 'both' ? 'Upper BE (lower: $' + (opt.strike - opt.premium).toFixed(2) + ')' :
+                                opt.beDir === 'up'   ? 'Stock must close ABOVE this' : 'Stock must close BELOW this';
+
+  // Greeks
+  el('optDelta').textContent    = opt.delta.toFixed(3);
+  el('optDelta').style.color    = opt.type === 'put' ? '#ef5350' : '#4caf50';
+  var pct = ((opt.strike - last) / last * 100);
+  el('optMoneyness').textContent = (Math.abs(pct) < 0.5 ? 'ATM' : (pct > 0 ? '+' : '') + pct.toFixed(1) + '%');
+  el('optMoneyness').style.color = Math.abs(pct) < 0.5 ? '#4fc3f7' : pct > 0 ? '#ce93d8' : '#ff9800';
+  el('optIV').textContent        = ((opt.premium > 0 ? Math.sqrt(2 * Math.PI / (opt.dte / 365)) * opt.premium / last * 100 : 0)).toFixed(1) + '%';
+  el('optMaxProfit').textContent  = opt.maxProfit;
+  el('optMaxProfit').style.color  = '#4caf50';
+  el('optMaxLoss').textContent    = opt.maxLoss;
+
+  // Level rows
+  el('optLevelRows').innerHTML = opt.levels.map(function(l) {
+    return '<div style="display:flex;gap:12px;padding:9px 0;border-bottom:1px solid #0e1e30;align-items:flex-start">' +
+           '<span style="font-size:14px;flex-shrink:0;width:22px">' + l.icon + '</span>' +
+           '<span style="font-size:13px;color:#9bbdd4;line-height:1.8">' + l.text + '</span></div>';
+  }).join('');
+
+  // Strike ladder
+  var S = last, sigma = parseFloat(el('optIV').textContent) / 100 || 0.25;
+  var T = opt.dte / 365, r = 0.05;
+  var ladderHTML = '<table style="width:100%;border-collapse:collapse">' +
+    '<tr style="font-size:10px;letter-spacing:2px;color:#2a5f8a;border-bottom:1px solid #1a3a5c">' +
+    '<th style="padding:10px 16px;text-align:left">STRIKE</th>' +
+    '<th style="padding:10px 16px;text-align:center">MONEYNESS</th>';
+
+  if (opt.type !== 'straddle') {
+    var colType = opt.type === 'call' ? 'CALL PREM' : 'PUT PREM';
+    ladderHTML += '<th style="padding:10px 16px;text-align:center">' + colType + '</th>' +
+      '<th style="padding:10px 16px;text-align:center">DELTA</th>' +
+      '<th style="padding:10px 16px;text-align:center">CONTRACT COST</th>' +
+      '<th style="padding:10px 16px;text-align:center">BREAKEVEN</th></tr>';
+  } else {
+    ladderHTML += '<th style="padding:10px 16px;text-align:center">CALL PREM</th>' +
+      '<th style="padding:10px 16px;text-align:center">PUT PREM</th>' +
+      '<th style="padding:10px 16px;text-align:center">TOTAL COST</th>' +
+      '<th style="padding:10px 16px;text-align:center">UPPER BE</th></tr>';
+  }
+
+  opt.allStrikes.forEach(function(k) {
+    var isRec = (k === opt.strike);
+    var mono  = ((k - S) / S * 100);
+    var bg    = isRec ? 'background:#0d2040;' : '';
+    var bdr   = isRec ? 'border-left:3px solid ' + opt.stratColor + ';' : 'border-left:3px solid transparent;';
+    var monoStr = Math.abs(mono) < 0.5 ? '<span style="color:#4fc3f7">ATM</span>' :
+                  mono > 0 ? '<span style="color:#ce93d8">+' + mono.toFixed(1) + '% OTM</span>' :
+                             '<span style="color:#ff9800">' + mono.toFixed(1) + '% ITM</span>';
+    var row = '<tr style="' + bg + bdr + 'border-bottom:1px solid #0e1e30">' +
+              '<td style="padding:10px 16px;font-size:13px;font-weight:600;color:' + (isRec ? opt.stratColor : '#8fb8d8') + '">' +
+              '$' + k.toFixed(2) + (isRec ? ' &#9668; REC' : '') + '</td>' +
+              '<td style="padding:10px 16px;text-align:center;font-size:12px">' + monoStr + '</td>';
+
+    if (opt.type !== 'straddle') {
+      var prem  = blackScholes(S, k, T, r, sigma, opt.type);
+      var delta = bsDelta(S, k, T, r, sigma, opt.type);
+      var be    = opt.type === 'call' ? k + prem : k - prem;
+      var beCol = opt.type === 'call' ? (be > S ? '#ef5350' : '#4caf50') : (be < S ? '#4caf50' : '#ef5350');
+      row += '<td style="padding:10px 16px;text-align:center;font-size:13px;color:#ce93d8">$' + prem.toFixed(2) + '</td>' +
+             '<td style="padding:10px 16px;text-align:center;font-size:13px;color:' + (opt.type==='call'?'#4caf50':'#ef5350') + '">' + delta.toFixed(3) + '</td>' +
+             '<td style="padding:10px 16px;text-align:center;font-size:13px;color:#e0f4ff">$' + (prem * 100).toFixed(0) + '</td>' +
+             '<td style="padding:10px 16px;text-align:center;font-size:13px;color:' + beCol + '">$' + be.toFixed(2) + '</td>';
+    } else {
+      var cp = blackScholes(S, k, T, r, sigma, 'call');
+      var pp = blackScholes(S, k, T, r, sigma, 'put');
+      var tot = cp + pp;
+      row += '<td style="padding:10px 16px;text-align:center;font-size:13px;color:#4caf50">$' + cp.toFixed(2) + '</td>' +
+             '<td style="padding:10px 16px;text-align:center;font-size:13px;color:#ef5350">$' + pp.toFixed(2) + '</td>' +
+             '<td style="padding:10px 16px;text-align:center;font-size:13px;color:#ce93d8">$' + (tot * 100).toFixed(0) + '</td>' +
+             '<td style="padding:10px 16px;text-align:center;font-size:13px;color:#ff9800">$' + (k + tot).toFixed(2) + '</td>';
+    }
+    row += '</tr>';
+    ladderHTML += row;
+  });
+
+  ladderHTML += '</table>';
+  el('optLadder').innerHTML = ladderHTML;
+
+  // Update tab badge
+  var badge = document.getElementById('badge-options');
+  badge.textContent = opt.strategy;
+  badge.className = 'tab-badge ' + (opt.type === 'call' ? 'green' : opt.type === 'put' ? 'red' : 'amber');
+}
+
+</script>
+</body>
+</html>
